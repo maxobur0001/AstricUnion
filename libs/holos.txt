@@ -1,0 +1,56 @@
+--@name HoloCreator
+--@author
+--@server
+
+Part = {}
+Part.__index = Part
+
+--[[
+    Part structure, stores hologram data
+    @param pos Position of holo, default Vector()
+    @param ang Angle of holo, default Angle()
+    @param model Model of holo, default "models/hunter/blocks/cube025x025x025.mdl"
+    @param scale Scale of holo, default Vector(1, 1, 1)
+    @param suppress_light Suppress light of the holo, default false
+    @param color Color of holo, default full white
+    @param mat Material of holo, default uses model material
+]]--
+function Part:new(pos, ang, model, scale, suppress_light, color, mat)
+    local self = setmetatable(
+        {
+            pos = pos or Vector(),
+            ang = ang or Angle(),
+            model = model or "models/hunter/blocks/cube025x025x025.mdl",
+            scale = scale or Vector(1, 1, 1),
+            suppress_light = suppress_light or false,
+            color = color or Color(255, 255, 255),
+            mat = mat or nil
+        },
+        Part
+    )
+    return self
+end
+setmetatable(Part, {__call = Part.new})
+
+
+--[[
+    Creates and parents holograms to first hologram, to create one object
+    @param ... List of Part structures
+]]--
+function hologram.createPart(...)
+    local main_holo
+    for i, part in ipairs({...}) do
+        local holo = hologram.create(part.pos, part.ang, part.model, part.scale)
+        holo:suppressEngineLighting(part.suppress_light)
+        holo:setColor(part.color)
+        if part.mat then holo:setMaterial(part.mat) end
+        holo:setPos(chip():getPos() + holo:getPos())
+        if i == 1 then
+            main_holo = holo
+            continue
+        end
+        holo:setParent(main_holo)
+    end
+    return main_holo
+end
+

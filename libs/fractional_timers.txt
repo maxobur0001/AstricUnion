@@ -51,7 +51,6 @@ function FTimer:update()
     while self.loops ~= 0 do
         coroutine.yield()
         local time = ticks * game.getTickInterval()
-        print(time)
         local process = math.timeFraction(0, self.duration, time)
         if time >= self.duration then
             ticks = 0
@@ -72,6 +71,7 @@ function FTimer:update()
             end
         end
         ticks = ticks + 1
+        coroutine.wait(0)
     end
 end
 

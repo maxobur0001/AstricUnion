@@ -1,19 +1,19 @@
 --@name Simple gun
 --@author
 --@server
---@include ../libs/holos.lua
+--@include astricunion/libs/holos.txt
 
-require("../libs/holos.lua")
+require("astricunion/libs/holos.txt")
 
 local parts = {
     hand = {
         hologram.createPart(
-            {Vector(0, 0, 0), Angle(), "models/hunter/blocks/cube025x025x025.mdl"},
-            {Vector(0, 0, 5), Angle(), "models/props_c17/oildrum001_explosive.mdl"}
+            Part(),
+            Part(Vector(0, 0, 5), Angle(), "models/props_c17/oildrum001_explosive.mdl")
         ),
         hologram.createPart(
-            {Vector(0, 0, 45), Angle(), "models/hunter/blocks/cube025x025x025.mdl"},
-            {Vector(0, 0, 50), Angle(), "models/props_c17/oildrum001_explosive.mdl"}
+            Part(Vector(0, 0, 45)),
+            Part(Vector(0, 0, 50), Angle(), "models/props_c17/oildrum001_explosive.mdl")
         ),
     }
 }
