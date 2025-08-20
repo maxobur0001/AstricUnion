@@ -1,5 +1,5 @@
---@name test
---@author maxobur0001
+--@name Fractional timer example
+--@author AstricUnion
 --@include astricunion/libs/fractional_timers.txt
 --@server
 

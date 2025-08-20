@@ -1,5 +1,5 @@
 --@name Simple gun
---@author
+--@author AstricUnion
 --@server
 --@include astricunion/libs/holos.txt
 

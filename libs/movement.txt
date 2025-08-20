@@ -1,0 +1,82 @@
+--@name Movement
+--@author AstricUnion
+--@server
+
+
+--[[
+    Gets key direction of player.
+    @param ply Player
+    @param negative_key See IN_KEY enum
+    @param positive_key See IN_KEY enum
+    @return number from -1 to 1
+]]--
+local function getKeyDirection(ply, negative_key, positive_key)
+    return (ply:keyDown(positive_key) and 1 or 0) - (ply:keyDown(negative_key) and 1 or 0)
+end
+
+Movement = {}
+Movement.__index = Movement
+
+--[[
+    Movement object. Implementing movement behaviour for bot.
+    @param seat Seat to use with bot
+    @param hitbox Hitbox to use with bot (collision model)
+    @param speed Bot maximum speed. Default 200
+    @param sharpness Bot speed sharpness. Default 6
+    @return Movement object
+]]--
+function Movement:new(seat, hitbox, speed, sharpness)
+    local physobj = hitbox:getPhysicsObject()
+    physobj:setMass(1000)
+    seat:setParent(hitbox)
+    seat:setColor(Color(0, 0, 0, 0))
+    seat:setCollisionGroup(COLLISION_GROUP.NONE)
+    local self = setmetatable(
+        {
+            speed = speed or 200,
+            velocity = Vector(),
+            sharpness = sharpness or 6,
+            hitbox = hitbox,
+            physobj = physobj,
+            seat = seat
+        },
+        Movement
+    )
+    return self
+end
+
+
+--[[
+    Think hook for Movement. Also can be used in Tick
+]]--
+function Movement:think()
+    local frametime = game.getTickInterval()
+    local driver = self.seat:getDriver()
+    if isValid(driver) then
+        if self.physobj:isGravityEnabled() then
+            self.physobj:enableGravity(false)
+        end
+        local eyeangles = driver:getEyeAngles():setR(0)
+        local dir = Vector(
+            getKeyDirection(driver, IN_KEY.BACK, IN_KEY.FORWARD),
+            getKeyDirection(driver, IN_KEY.MOVERIGHT, IN_KEY.MOVELEFT),
+            0
+        ):getRotated(eyeangles)
+        dir.z = math.clamp(
+            dir.z + getKeyDirection(driver, IN_KEY.SPEED, IN_KEY.JUMP),
+            -1,
+            1
+        )
+        self.velocity = math.lerpVector(frametime * self.sharpness, self.velocity, dir * self.speed * 100 * frametime)
+        self.physobj:setVelocity(self.velocity)
+        local ang = self.seat:worldToLocalAngles(eyeangles - self.hitbox:getAngles())
+        ang = ang:getQuaternion():getRotationVector() - self.hitbox:getAngleVelocity() / 5
+        self.physobj:addAngleVelocity(ang)
+    else
+        if not self.physobj:isGravityEnabled() then
+            self.physobj:enableGravity(true)
+        end
+    end
+    self.seat:setAngles(Angle())
+end
+
