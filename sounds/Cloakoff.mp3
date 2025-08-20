@@ -1,0 +1,13 @@
+--2025-08-20 19:01:03--  https://www.dl.dropboxusercontent.com/scl/fi/qjo7opc89zal4t3jdqe6z/uncloak.mp3?rlkey=cbubq79ora1vn6bhnkvws4jhi&st=kgfw94f7&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 56482 (55K) [audio/mpeg]
+Saving to: ‘uncloak.mp3?rlkey=cbubq79ora1vn6bhnkvws4jhi&st=kgfw94f7&dl=1’
+
+     0K .......... .......... .......... .......... .......... 90%  181K 0s
+    50K .....                                                 100% 9.61T=0.3s
+
+2025-08-20 19:01:05 (199 KB/s) - ‘uncloak.mp3?rlkey=cbubq79ora1vn6bhnkvws4jhi&st=kgfw94f7&dl=1’ saved [56482/56482]
+

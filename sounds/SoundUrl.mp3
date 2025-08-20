@@ -1,0 +1,18 @@
+--2025-08-20 19:00:26--  https://www.dl.dropboxusercontent.com/scl/fi/n9tzb3v1vs6x1fayy9cig/saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 355532 (347K) [audio/mpeg]
+Saving to: ‘saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1’
+
+     0K .......... .......... .......... .......... .......... 14%  298K 1s
+    50K .......... .......... .......... .......... .......... 28%  756K 1s
+   100K .......... .......... .......... .......... .......... 43% 1.03M 0s
+   150K .......... .......... .......... .......... .......... 57%  856K 0s
+   200K .......... .......... .......... .......... .......... 72% 1.73M 0s
+   250K .......... .......... .......... .......... .......... 86% 2.47M 0s
+   300K .......... .......... .......... .......... .......   100% 1.36M=0.4s
+
+2025-08-20 19:00:32 (824 KB/s) - ‘saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1’ saved [355532/355532]
+

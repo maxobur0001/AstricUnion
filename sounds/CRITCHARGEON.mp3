@@ -1,0 +1,14 @@
+--2025-08-20 19:01:54--  https://www.dl.dropboxusercontent.com/scl/fi/tjw2jwosp6vrrtze04gc4/Critpower-ON.mp3?rlkey=5s17b2awbnvpggve4wruwiyrv&st=8wldp4jx&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 106637 (104K) [audio/mpeg]
+Saving to: ‘Critpower-ON.mp3?rlkey=5s17b2awbnvpggve4wruwiyrv&st=8wldp4jx&dl=1’
+
+     0K .......... .......... .......... .......... .......... 48%  142K 0s
+    50K .......... .......... .......... .......... .......... 96%  725K 0s
+   100K ....                                                  100% 7.71T=0.4s
+
+2025-08-20 19:01:56 (248 KB/s) - ‘Critpower-ON.mp3?rlkey=5s17b2awbnvpggve4wruwiyrv&st=8wldp4jx&dl=1’ saved [106637/106637]
+

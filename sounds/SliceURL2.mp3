@@ -1,0 +1,12 @@
+--2025-08-20 19:00:44--  https://www.dl.dropboxusercontent.com/scl/fi/7t1s9x07liqpn7pqb9kev/Slice2.mp3?rlkey=f0bnje8jgsxz8m5alqf9gkaug&st=oewbmq79&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 45197 (44K) [audio/mpeg]
+Saving to: ‘Slice2.mp3?rlkey=f0bnje8jgsxz8m5alqf9gkaug&st=oewbmq79&dl=1’
+
+     0K .......... .......... .......... .......... ....      100%  363K=0.1s
+
+2025-08-20 19:00:45 (363 KB/s) - ‘Slice2.mp3?rlkey=f0bnje8jgsxz8m5alqf9gkaug&st=oewbmq79&dl=1’ saved [45197/45197]
+

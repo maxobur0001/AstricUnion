@@ -1,0 +1,12 @@
+--2025-08-20 19:01:29--  https://www.dl.dropboxusercontent.com/scl/fi/b1qscdkrzj8gbl4p6xq87/AstrSHOOT2.mp3?rlkey=nuxpfbcy7sqm8mvn9br8uzfa8&st=j1c3m4fi&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 16358 (16K) [audio/mpeg]
+Saving to: ‘AstrSHOOT2.mp3?rlkey=nuxpfbcy7sqm8mvn9br8uzfa8&st=j1c3m4fi&dl=1’
+
+     0K .......... .....                                      100% 2.80M=0.006s
+
+2025-08-20 19:01:31 (2.80 MB/s) - ‘AstrSHOOT2.mp3?rlkey=nuxpfbcy7sqm8mvn9br8uzfa8&st=j1c3m4fi&dl=1’ saved [16358/16358]
+

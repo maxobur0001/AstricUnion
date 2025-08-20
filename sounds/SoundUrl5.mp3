@@ -1,0 +1,13 @@
+--2025-08-20 19:01:43--  https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)... 162.125.70.15, 2620:100:6026:15::a27d:460f
+Connecting to www.dl.dropboxusercontent.com (www.dl.dropboxusercontent.com)|162.125.70.15|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 77798 (76K) [audio/mpeg]
+Saving to: ‘ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1’
+
+     0K .......... .......... .......... .......... .......... 65%  187K 0s
+    50K .......... .......... .....                           100% 1.76M=0.3s
+
+2025-08-20 19:01:49 (269 KB/s) - ‘ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1’ saved [77798/77798]
+
