@@ -8,7 +8,7 @@ require("astricunion/libs/movement.txt")
 local seat = prop.createSeat(chip():getPos() + Vector(0, 0, 30), Angle(), "models/nova/airboat_seat.mdl")
 local size = Vector(70, 70, 20)
 local hitbox = prop.createCustom(
-    chip():getPos() + Vector(-x/2, -y/2, 0),
+    chip():getPos() + Vector(-size.x/2, -size.y/2, 0),
     Angle(), 
     {
         {
