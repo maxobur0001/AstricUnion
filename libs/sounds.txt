@@ -1,0 +1,102 @@
+--@name Sounds
+--@author maxobur0001
+--@shared
+
+if SERVER then
+    Sound = {}
+    Sound.__index = Sound
+    
+    function Sound:new(name, volume, looping, url)
+        local self = setmetatable(
+            {
+                name = name,
+                volume = volume,
+                looping = looping,
+                url = url
+            },
+            Sound
+        )
+        return self
+    end
+    setmetatable(Sound, {__call = Sound.new})
+    
+    function preloadSounds(...)
+        for _, snd in ipairs({...}) do
+            timer.simple(0.3, function()
+                net.start("preloadSound")
+                net.writeString(snd.url)
+                net.writeString(snd.name)
+                net.writeBool(snd.looping)
+                net.writeInt(snd.volume, 32)
+                net.send(find.allPlayers())
+            end)
+        end
+    end
+    
+    
+    function playSound(name)
+        net.start("playSound")
+        net.writeString(name)
+        net.send(find.allPlayers())
+    end
+        
+    function stopSound(name)
+        net.start("stopSound")
+        net.writeString(name)
+        net.send(find.allPlayers())
+    end
+    
+    preloadSounds(
+        Sound("scan", 30, true, "https://www.dl.dropboxusercontent.com/scl/fi/cd99n62t66324nb82rogl/sentry-scanning.mp3?rlkey=55wn0lyuy6znyxu0ajiyfspfq&st=1dy0ilxu&dl=1"),
+        Sound("spotted", 30, false, "https://www.dl.dropboxusercontent.com/scl/fi/441wna5k93x7se9ga8qao/sentry-spotted.mp3?rlkey=hg2af7b3jtgfh55rwozusupno&st=5yfzzmd3&dl=1"),
+        Sound("shot", 30, false, "https://www.dl.dropboxusercontent.com/scl/fi/yizc9yefv9jcgenj2us8i/sentry-shooting.mp3?rlkey=0o4lp0oz47333qr9d7k8n5bzv&st=uu5pq3xd&dl=1")
+    )
+    timer.simple(10, function()
+        playSound("spotted")
+    end)
+
+else
+    SOUNDS = {}
+
+    net.receive("preloadSound", function()
+        local url = net.readString()
+        local name = net.readString()
+        local loop = net.readBool()
+        local volume = net.readInt(32)
+        bass.loadURL(url, "3d noblock noplay", function(snd, err, errname)
+            if not snd then
+                print(err, errname)
+                return
+            end
+            SOUNDS[name] = snd
+            snd:setVolume(volume)
+            snd:setLooping(loop)
+        end)
+    end)
+    
+    net.receive("playSound", function()
+        local name = net.readString()
+        local sound = SOUNDS[name]
+        if sound then
+            if not sound:isLooping() then
+                if sound:getTime() == sound:getLength() then
+                    sound:setTime(0)
+                end
+            end
+            sound:setPos(chip():getPos())
+            sound:play()
+        end
+    end)
+    
+    net.receive("stopSound", function()
+        local name = net.readString()
+        local sound = SOUNDS[name]
+        if sound then
+            if not sound:isLooping() then
+                return
+            end
+            sound:pause()
+            sound:setTime(0)
+        end
+    end)
+end

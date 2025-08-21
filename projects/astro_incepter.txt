@@ -1,3 +1,6 @@
 --@name Astro Incepter (WIP)
 --@author Astric Union
---@shared
+--@server
+--@include https://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/holos/astro_incepter_holos.txt as holos.txt
+
+require("holos.txt")
