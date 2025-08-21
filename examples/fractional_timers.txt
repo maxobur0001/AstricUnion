@@ -1,11 +1,11 @@
 --@name Fractional timer example
 --@author AstricUnion
---@include astricunion/libs/fractional_timers.txt
+--@include http://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/libs/fractional_timers.txt as timers.txt
 --@server
 
-require("astricunion/libs/fractional_timers.txt")
+require("timers.txt")
 
-FTimer:new("test", 10, 3, {
+FTimer:new(10, 3, {
     [0.0] = function()
         print("started")
     end,
