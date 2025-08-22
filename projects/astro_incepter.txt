@@ -45,7 +45,7 @@ if SERVER then
             body.head[2]:setAngles(driver:getEyeAngles())
         end
         local angs = body.base[2]:getLocalAngles()
-        body.base[2]:setLocalAngles(angs:setY(angs.y + 2))
+        body.base[2]:setLocalAngles(angs:setY(angs.y + 5))
         movement:think()
     end)
     
