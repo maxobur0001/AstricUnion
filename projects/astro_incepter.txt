@@ -1,6 +1,104 @@
 --@name Astro Incepter (WIP)
 --@author Astric Union
---@server
---@include https://raw.githubusercontent.com/maxobur0001/AstricUnion/refs/heads/main/holos/astro_incepter_holos.txt as holos.txt
+--@shared
+if SERVER then
+    --@include astricunion/holos/astro_incepter_holos.txt
+    --@include astricunion/libs/movement.txt
+    --@include astricunion/libs/guns.txt
+    
+    require("astricunion/holos/astro_incepter_holos.txt")
+    require("astricunion/libs/movement.txt")
+    require("astricunion/libs/guns.txt")
+    
+    
+    local seat = prop.createSeat(chip():getPos() + Vector(0, 0, 120), Angle(), "models/nova/airboat_seat.mdl")
+    local size = Vector(300, 300, 100)
+    local hitbox = prop.createCustom(
+        chip():getPos() + Vector(-size.x/2, -size.y/2, -50),
+        Angle(), 
+        {
+            {
+                Vector(0, 0, 0), Vector(size.x, 0, 0), Vector(size.x, size.y, 0), Vector(0, size.y, 0),
+                Vector(0, 0, size.z), Vector(size.x, 0, size.z), Vector(size.x, size.y, size.z), Vector(0, size.y, size.z),
+            },
+        }
+    )
+    local movement = Movement:new(seat, hitbox)
+    
+    body.base[1]:setParent(hitbox)
+    body.base[2]:setParent(body.base[1])
+    body.wings.leftmain:setParent(body.base[1])
+    body.wings.leftup:setParent(body.base[1])
+    body.wings.leftdown:setParent(body.base[1])
+    body.wings.rightmain:setParent(body.base[1])
+    body.wings.rightup:setParent(body.base[1])
+    body.wings.rightdown:setParent(body.base[1])
+    body.head[1]:setParent(body.base[1])
+    body.head[2]:setParent(body.head[1])
+    hitbox:setPos(hitbox:getPos() + Vector(0, 0, 300))
+    
+    
+    hook.add("Think", "Movement", function()
+        local driver = seat:getDriver()
+        if isValid(driver) then
+            body.head[1]:setAngles(driver:getEyeAngles())
+            body.head[2]:setAngles(driver:getEyeAngles())
+        end
+        local angs = body.base[2]:getLocalAngles()
+        body.base[2]:setLocalAngles(angs:setY(angs.y + 2))
+        movement:think()
+    end)
+    
+    hook.add("KeyPress", "", function(ply, key)
+        if ply == seat:getDriver() then
+            if key == IN_KEY.ATTACK then
+                Explosion:new(ply:getPos() + ply:getForward() * 100, ply:getEyeAngles())
+            end
+        end
+    end)
+    
+    hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
+        if vehicle == seat then
+            net.start("OnEnter")
+            net.send(ply)
+        end
+    end)
+    
+    hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
+        if vehicle == seat then
+            net.start("OnLeave")
+            net.send(ply)
+        end
+    end)
+else
+    
+    function createHud()
+        hook.add("DrawHUD", "", function()
+        
+        end)
+        hook.add("CalcView", "", function(pos, ang, fov, znear, zfar)
+            return {
+                origin = player():getEyePos() + player():getEyeAngles():getForward() * 150,
+                angles = ang,
+                fov = 120
+            }
+        end)
+    end
 
-require("holos.txt")
+    function removeHud()
+        hook.remove("DrawHUD", "")
+        hook.remove("CalcView", "")
+    end
+    
+    net.receive("OnEnter", function()
+        timer.simple(2, function()
+            enableHud(player(), true)
+            createHud()
+        end)
+    end)
+    
+    net.receive("OnLeave", function()
+        enableHud(player(), false)
+        removeHud()
+    end)
+end

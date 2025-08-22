@@ -1,0 +1,90 @@
+--@name Projectiles, damage and ETC
+--@author AstricUnion
+--@server
+
+local explosions = {}
+
+---------------------- Explosion projectile for gun ----------------------
+Explosion = {}
+Explosion.__index = Explosion
+
+--[[
+    Create new explosion projectile 
+    @param positon Position of a projectile 
+    @param angle Angle and direction of a projectile
+    @param velocity Velocity of a projectile. Default 2000
+    @param radius Radius of a projectile explosion. Default 200
+    @param damage Maximum damage of a projectile explosion. Default 50
+    @param timeout Timeout of a projectile. Default 3
+    @return Explosion object
+]]--
+function Explosion:new(position, angle, velocity, radius, damage, timeout)
+    -- TODO: new projectile holos
+    local velocity = velocity or 2000
+    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(2, 2, -2))
+    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.8, 1.8, -1.8))
+    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.6, 1.6, 1.6))
+    holo:suppressEngineLighting(true)
+    holo:setTrails(32, 0, 0.01, "effects/beam_generic01", Color(255, 0, 0))
+    holo2:suppressEngineLighting(true)
+    holo3:suppressEngineLighting(true)
+    holo:setColor(Color(255, 0, 0))
+    holo2:setColor(Color(250, 200, 200))
+    holo2:setParent(holo)
+    holo3:setParent(holo)
+    holo:setVelocity(velocity * holo:getForward())
+    local self = setmetatable(
+        {
+            holo = holo,
+            ray_length = velocity / 50,
+            radius = radius or 200,
+            damage = damage or 50
+        },
+        Explosion
+    )
+    table.insert(explosions, self)
+    timer.simple(timeout or 3, function()
+        if not isValid(self.holo) then
+            return
+        end
+        self:explode(self.holo:getPos())
+    end)
+    return self
+end
+
+
+--[[
+    Explodes projectile on position and deletes it
+    @param pos Position of explode
+]]
+function Explosion:explode(pos)
+    local eff = effect.create()
+    eff:setOrigin(pos)
+    eff:setMagnitude(self.radius / 40)
+    eff:setScale(self.radius / 40)
+    eff:play("Explosion")
+    self.holo:remove()
+    game.blastDamage(pos, self.radius, self.damage)
+    table.removeByValue(explosions, self)
+end
+
+function Explosion:think()
+    local pos = self.holo:getPos()
+    local forward = self.holo:getForward()
+    local trace_result = trace.line(pos - forward * self.ray_length, pos + forward * self.ray_length, nil, MASK.SHOT_HULL)
+    if trace_result.Hit then
+        self:explode(trace_result.HitPos)
+    end
+end
+
+hook.add("Think", "ExplosionProjectiles", function()
+    for _, explosion in ipairs(explosions) do
+        explosion:think()
+    end
+end)
+
+
+
+
+---------------------- Laser ----------------------
+
