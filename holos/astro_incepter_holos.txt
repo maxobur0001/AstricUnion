@@ -58,6 +58,21 @@ if SERVER then
             leftdown = hologram.createPart(
                 Holo(SubHolo(Vector(0,70,10),Angle(0,0,-120),"models/props_combine/combine_emitter01.mdl",Vector(5,5,22),false,Color(255,40,40)))
             ),
+            leftblaster = hologram.createPart(
+                Holo(SubHolo(Vector(-80,-480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.37,0.37,9),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-50,-480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.32,0.32,12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-25,-480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.24,0.24,10),true,Color(100,20,20),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-480,-18),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-469,-24),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-491,-24),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-491,-36),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-469,-36),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,-480,-42),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(0,-480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.35,0.35,8),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-80,-480,-30),Angle(-90,0,0),"models/props_phx/gears/spur12.mdl",Vector(1.4,1.4,3.8),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(20,-480,-30),Angle(-90,0,0),"models/props_phx/gears/spur12.mdl",Vector(1.2,1.2,2),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(20,-480,-30),Angle(-90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.12,0.12,1),false,Color(255,0,0),"models/debug/debugwhite"))
+            ),
             rightmain = hologram.createPart(
                 Holo(SubHolo(Vector(0,-100,0),Angle(0,0,90),"models/props_combine/combine_emitter01.mdl",Vector(6,10,25),false,Color(255,40,40)))
             ),
@@ -66,6 +81,21 @@ if SERVER then
             ),
             rightdown = hologram.createPart(
                 Holo(SubHolo(Vector(0,-70,10),Angle(0,0,120),"models/props_combine/combine_emitter01.mdl",Vector(5,5,22),false,Color(255,40,40)))
+            ),
+            rightblaster = hologram.createPart(
+                Holo(SubHolo(Vector(-80,480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.37,0.37,9),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-50,480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.32,0.32,12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-25,480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.24,0.24,10),true,Color(100,20,20),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,480,-18),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,469,-24),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,491,-24),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,491,-36),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,469,-36),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(-18,480,-42),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.03,0.03,10),true,Color(255,0,0),"models/debug/debugwhite")),
+                Holo(SubHolo(Vector(0,480,-30),Angle(90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.35,0.35,8),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(-80,480,-30),Angle(-90,0,0),"models/props_phx/gears/spur12.mdl",Vector(1.4,1.4,3.8),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(20,480,-30),Angle(-90,0,0),"models/props_phx/gears/spur12.mdl",Vector(1.2,1.2,2),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+                Holo(SubHolo(Vector(20,480,-30),Angle(-90,0,0),"models/hunter/tubes/circle2x2.mdl",Vector(0.12,0.12,1),false,Color(255,0,0),"models/debug/debugwhite"))
             )
         }
     }
