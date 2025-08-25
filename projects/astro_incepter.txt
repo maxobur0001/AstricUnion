@@ -2,15 +2,17 @@
 --@author Astric Union
 --@shared
 if SERVER then
-    --@include astricunion/holos/astro_incepter_holos.txt
     --@include astricunion/libs/movement.txt
     --@include astricunion/libs/guns.txt
-    
-    require("astricunion/holos/astro_incepter_holos.txt")
+    --@include astricunion/libs/fractional_timers.txt
+    --@include astricunion/holos/astro_incepter_holos.txt
+
     require("astricunion/libs/movement.txt")
     require("astricunion/libs/guns.txt")
-    
-    
+    require("astricunion/libs/fractional_timers.txt")
+    require("astricunion/holos/astro_incepter_holos.txt")
+
+
     local seat = prop.createSeat(chip():getPos() + Vector(0, 0, 120), Angle(), "models/nova/airboat_seat.mdl")
     local size = Vector(300, 300, 100)
     local hitbox = prop.createCustom(
@@ -24,58 +26,149 @@ if SERVER then
         }
     )
     local movement = Movement:new(seat, hitbox)
-    
+
     body.base[1]:setParent(hitbox)
     body.base[2]:setParent(body.base[1])
     body.wings.leftmain:setParent(body.base[1])
     body.wings.leftup:setParent(body.base[1])
     body.wings.leftdown:setParent(body.base[1])
+    body.wings.leftblaster:setParent(body.wings.leftmain)
     body.wings.rightmain:setParent(body.base[1])
     body.wings.rightup:setParent(body.base[1])
     body.wings.rightdown:setParent(body.base[1])
+    body.wings.rightblaster:setParent(body.wings.rightmain)
     body.head[1]:setParent(body.base[1])
     body.head[2]:setParent(body.head[1])
     hitbox:setPos(hitbox:getPos() + Vector(0, 0, 300))
-    
-    
+
+
     hook.add("Think", "Movement", function()
         local driver = seat:getDriver()
         if isValid(driver) then
+            local eye_trace = driver:getEyeTrace()
             body.head[1]:setAngles(driver:getEyeAngles())
             body.head[2]:setAngles(driver:getEyeAngles())
+            body.wings.rightblaster:setAngles((body.wings.rightblaster:getPos() - eye_trace.HitPos):getAngle() + Angle(-90, 0, 0))
+            body.wings.leftblaster:setAngles((body.wings.leftblaster:getPos() - eye_trace.HitPos):getAngle() + Angle(-90, 0, 0))
         end
         local angs = body.base[2]:getLocalAngles()
         body.base[2]:setLocalAngles(angs:setY(angs.y + 5))
         movement:think()
     end)
-    
+
     hook.add("KeyPress", "", function(ply, key)
         if ply == seat:getDriver() then
             if key == IN_KEY.ATTACK then
-                Explosion:new(ply:getPos() + ply:getForward() * 100, ply:getEyeAngles())
+                local eye_trace = ply:getEyeTrace()
+                Explosion:new(body.wings.rightblaster:getPos(), body.wings.rightblaster:getAngles() + Angle(90, 0, 0), nil, nil, 70)
+                Explosion:new(body.wings.leftblaster:getPos(), body.wings.leftblaster:getAngles() + Angle(90, 0, 0), nil, nil, 70)
+            elseif key == IN_KEY.RELOAD then
+                net.start("UpdatePlayers")
+                net.send(ply)
             end
         end
     end)
-    
+
     hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
         if vehicle == seat then
             net.start("OnEnter")
             net.send(ply)
         end
     end)
-    
+
     hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
         if vehicle == seat then
             net.start("OnLeave")
             net.send(ply)
         end
     end)
+
+    FTimer:new(6, -1, {
+        ["0-0.5"] = function(t, fraction, relative)
+            body.base[1]:setLocalPos(body.base[1]:getLocalPos():setZ(6 * math.easeInOutCubic(relative) + 50))
+            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(relative) + 160))
+        end,
+        ["0.5-1"] = function(t, fraction, relative)
+            body.base[1]:setLocalPos(body.base[1]:getLocalPos():setZ(6 * math.easeInOutCubic(1 - relative) + 50))
+            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(1 - relative) + 160))
+        end
+    })
 else
-    
+    --@include astricunion/libs/ui.txt
+    require("astricunion/libs/ui.txt")
+
+    local sw, sh
+    local health_bar
+    local esp_bar
+    local players_positions = {}
+    local radar_cooldown = 0
+
+
+    timer.create("RadarIncrease", 0, 0, function()
+        if radar_cooldown < 1 then
+            radar_cooldown = radar_cooldown + 0.005
+        end
+    end)
+
     function createHud()
+        local fontMontserrat24 = render.createFont(
+            "Montserrat",
+            24,
+            500,
+            true,
+            false,
+            false,
+            false,
+            0,
+            true,
+            0
+        )
+
         hook.add("DrawHUD", "", function()
-        
+            sw, sh = render.getGameResolution()
+
+            ---- Aim ----
+            local eye_trace = player():getEyeTrace()
+            local pos = eye_trace.HitPos
+            local dist = player():getPos():getDistance(pos)
+            local size = 20000 / dist
+
+            render.drawRectOutline(sw / 2 - size / 2, sh / 2 - size / 2, size, size, 2)
+            render.drawCircle(sw / 2, sh / 2, 1)
+            render.setFont(fontMontserrat24)
+            render.drawText(sw / 2, sh / 2, tostring(math.round(dist)) .. " units")
+
+            ---- HP bar ----
+            local health = player():getHealth() / player():getMaxHealth()
+            if not health_bar then
+                health_bar = Bar:new(sw * 0.2, sh * 0.8, 200, 30, 1)
+                    :setLabelLeft("HEALTH")
+            end
+            local current = health_bar.current_percent
+            health_bar:setPercent(health)
+                :setLabelRight(tostring(math.round(current * 100)) .. "%")
+                :setBarColor(Color(255, 255, 255, 255) * Color(1, current, current, 1))
+            health_bar:draw()
+
+            ---- ESP ----
+            render.setColor(Color(255, 255, 255, 255 * (1 - math.clamp(radar_cooldown, 0, 1))))
+            for _, ply_pos in ipairs(players_positions) do
+                local pos = ply_pos:toScreen()
+                local distance = player():getPos():getDistance(ply_pos)
+                render.drawCircle(pos.x, pos.y, 20000 / distance)
+            end
+
+            render.setColor(Color(255, 255, 255))
+            ---- ESP bar ----
+            if not esp_bar then
+                esp_bar = Bar:new(sw * 0.8 - 200, sh * 0.8, 200, 30, 1)
+                    :setLabelRight("RADAR")
+            end
+            esp_bar:setPercent(radar_cooldown)
+                :setLabelLeft(tostring(math.round(esp_bar.current_percent * 100)) .. "%")
+            esp_bar:draw()
         end)
+
         hook.add("CalcView", "", function(pos, ang, fov, znear, zfar)
             return {
                 origin = player():getEyePos() + player():getEyeAngles():getForward() * 150,
@@ -85,20 +178,36 @@ else
         end)
     end
 
+    --[[
+    if player() == owner() then
+        enableHud(nil, true)
+        createHud()
+    end
+    ]]--
+
     function removeHud()
         hook.remove("DrawHUD", "")
         hook.remove("CalcView", "")
     end
-    
+
     net.receive("OnEnter", function()
         timer.simple(2, function()
             enableHud(player(), true)
             createHud()
         end)
     end)
-    
+
     net.receive("OnLeave", function()
         enableHud(player(), false)
         removeHud()
+    end)
+
+    net.receive("UpdatePlayers", function()
+        players_positions = {}
+        radar_cooldown = -0.5
+        local plys = find.allPlayers(function(x) return x ~= owner() end)
+        for _, ply in ipairs(plys) do
+            table.insert(players_positions, ply:obbCenterW())
+        end
     end)
 end

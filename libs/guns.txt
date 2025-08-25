@@ -8,16 +8,14 @@ local explosions = {}
 Explosion = {}
 Explosion.__index = Explosion
 
---[[
-    Create new explosion projectile 
-    @param positon Position of a projectile 
-    @param angle Angle and direction of a projectile
-    @param velocity Velocity of a projectile. Default 2000
-    @param radius Radius of a projectile explosion. Default 200
-    @param damage Maximum damage of a projectile explosion. Default 50
-    @param timeout Timeout of a projectile. Default 3
-    @return Explosion object
-]]--
+---Create new explosion projectile 
+---@param position Vector Position of a projectile 
+---@param angle Angle Angle and direction of a projectile
+---@param velocity number | nil Velocity of a projectile. Default 2000
+---@param radius number | nil Radius of a projectile explosion. Default 200
+---@param damage number | nil Maximum damage of a projectile explosion. Default 50
+---@param timeout number | nil Timeout of a projectile. Default 3
+---@return Explosion object
 function Explosion:new(position, angle, velocity, radius, damage, timeout)
     -- TODO: new projectile holos
     local velocity = velocity or 2000

@@ -13,17 +13,15 @@ FTimer =  {
 }
 FTimer.__index = FTimer
 
---[[
-    Fractional timer object.
-    @param duration Duration of timer
-    @param loops Time of loops in this timer. -1 to infinite looping
-    @param fractions Table with fractions. 
-                     As index you can use float number from 0 to 1 or range (as example, ["0.8-0.9"])
-                     As value you should use function. 
-                     For range function has 3 arguments (timer, fraction and relative fraction)
-                     For float function has 1 argument (timer)
-    @return FTimer object
-]]--
+---Fractional timer object.
+---@param duration number Duration of timer
+---@param loops number Time of loops in this timer. -1 to infinite looping
+---@param fractions table Table with fractions. 
+---                 As index you can use float number from 0 to 1 or range (as example, ["0.8-0.9"])
+---                 As value you should use function. 
+---                 For range function has 3 arguments (timer, fraction and relative fraction)
+---                 For float function has 1 argument (timer)
+---@return FTimer object
 function FTimer:new(duration, loops, fractions)
     local self = setmetatable(
         {
