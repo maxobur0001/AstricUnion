@@ -56,12 +56,18 @@ if SERVER then
         movement:think()
     end)
 
+    function createExplosionProj(pos, angle)
+        Explosion:new(pos, angle, 5000, 300, 70, nil, 2)
+    end
+
     hook.add("KeyPress", "", function(ply, key)
         if ply == seat:getDriver() then
+            -- Main: Explosion 5000 300 70 3 2--
             if key == IN_KEY.ATTACK then
                 local eye_trace = ply:getEyeTrace()
-                Explosion:new(body.wings.rightblaster:getPos(), body.wings.rightblaster:getAngles() + Angle(90, 0, 0), nil, nil, 70)
-                Explosion:new(body.wings.leftblaster:getPos(), body.wings.leftblaster:getAngles() + Angle(90, 0, 0), nil, nil, 70)
+                createExplosionProj(body.wings.rightblaster:getPos(), (eye_trace.HitPos - body.wings.rightblaster:getPos()):getAngle())
+                createExplosionProj(body.wings.leftblaster:getPos(), (eye_trace.HitPos - body.wings.leftblaster:getPos()):getAngle())
+            -- On reload: Radar, that's showing players on a few seconds --
             elseif key == IN_KEY.RELOAD then
                 net.start("UpdatePlayers")
                 net.send(ply)
@@ -83,6 +89,7 @@ if SERVER then
         end
     end)
 
+    -- Idle animation --
     FTimer:new(6, -1, {
         ["0-0.5"] = function(t, fraction, relative)
             body.base[1]:setLocalPos(body.base[1]:getLocalPos():setZ(6 * math.easeInOutCubic(relative) + 50))
@@ -93,6 +100,17 @@ if SERVER then
             body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(1 - relative) + 160))
         end
     })
+
+
+    -- Wings animation --
+    function closeWings()
+      FTimer:new(2, 1, {
+          ["0-1"] = function(t, fraction, relative)
+              body.wings.leftdown:setLocalAngles(body.wings.leftdown:getLocalAngles():setR(30 * math.easeInOutSine(1 - relative)))
+          end,
+      })
+    end
+    closeWings()
 else
     --@include astricunion/libs/ui.txt
     require("astricunion/libs/ui.txt")

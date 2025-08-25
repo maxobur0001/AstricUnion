@@ -105,6 +105,7 @@ hook.add("Think", "fractionalTimers", function()
         if not ftimer.paused then
             if coroutine.status(ftimer.update_func) == "dead" then
                 ftimer:remove()
+                continue
             end
             
             coroutine.resume(ftimer.update_func, ftimer)

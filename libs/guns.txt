@@ -15,13 +15,14 @@ Explosion.__index = Explosion
 ---@param radius number | nil Radius of a projectile explosion. Default 200
 ---@param damage number | nil Maximum damage of a projectile explosion. Default 50
 ---@param timeout number | nil Timeout of a projectile. Default 3
+---@param scale number | nil Timeout of a projectile. Default 3
 ---@return Explosion object
-function Explosion:new(position, angle, velocity, radius, damage, timeout)
-    -- TODO: new projectile holos
+function Explosion:new(position, angle, velocity, radius, damage, timeout, scale)
     local velocity = velocity or 2000
-    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(2, 2, -2))
-    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.8, 1.8, -1.8))
-    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.6, 1.6, 1.6))
+    local scale = scale or 1
+    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(2, 2, -2) * scale)
+    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.8, 1.8, -1.8) * scale)
+    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.6, 1.6, 1.6) * scale)
     holo:suppressEngineLighting(true)
     holo:setTrails(32, 0, 0.01, "effects/beam_generic01", Color(255, 0, 0))
     holo2:suppressEngineLighting(true)
