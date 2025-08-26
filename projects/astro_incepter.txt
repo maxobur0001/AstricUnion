@@ -1,6 +1,20 @@
 --@name Astro Incepter (WIP)
 --@author Astric Union
 --@shared
+
+function eyeTrace(ply, whitelist)
+    return trace.line(
+        ply:getEyePos(),
+        ply:getEyeAngles():getForward() * 1000000,
+        nil,
+        nil,
+        nil,
+        nil,
+        whitelist
+    )
+end
+
+
 if SERVER then
     --@include astricunion/libs/movement.txt
     --@include astricunion/libs/guns.txt
@@ -17,13 +31,14 @@ if SERVER then
     local size = Vector(300, 300, 100)
     local hitbox = prop.createCustom(
         chip():getPos() + Vector(-size.x/2, -size.y/2, -50),
-        Angle(), 
+        Angle(),
         {
             {
                 Vector(0, 0, 0), Vector(size.x, 0, 0), Vector(size.x, size.y, 0), Vector(0, size.y, 0),
                 Vector(0, 0, size.z), Vector(size.x, 0, size.z), Vector(size.x, size.y, size.z), Vector(0, size.y, size.z),
             },
-        }
+        },
+        true
     )
     local movement = Movement:new(seat, hitbox)
 
@@ -40,12 +55,23 @@ if SERVER then
     body.head[1]:setParent(body.base[1])
     body.head[2]:setParent(body.head[1])
     hitbox:setPos(hitbox:getPos() + Vector(0, 0, 300))
+    hitbox:setColor(Color(0, 0, 0, 0))
 
+    local all_holos = {}
+    table.insert(all_holos, body.base[1])
+    table.insert(all_holos, body.wings.leftblaster)
+    table.insert(all_holos, body.wings.rightblaster)
+    table.add(all_holos, table.getKeys(body.base[1]:getChildren()))
+    table.add(all_holos, table.getKeys(body.base[2]:getChildren()))
+    table.add(all_holos, table.getKeys(body.head[1]:getChildren()))
+    table.add(all_holos, table.getKeys(body.head[2]:getChildren()))
+    table.add(all_holos, table.getKeys(body.wings.rightblaster:getChildren()))
+    table.add(all_holos, table.getKeys(body.wings.leftblaster:getChildren()))
 
     hook.add("Think", "Movement", function()
         local driver = seat:getDriver()
         if isValid(driver) then
-            local eye_trace = driver:getEyeTrace()
+            local eye_trace = eyeTrace(driver, {hitbox, seat})
             body.head[1]:setAngles(driver:getEyeAngles())
             body.head[2]:setAngles(driver:getEyeAngles())
             body.wings.rightblaster:setAngles((body.wings.rightblaster:getPos() - eye_trace.HitPos):getAngle() + Angle(-90, 0, 0))
@@ -64,19 +90,21 @@ if SERVER then
         if ply == seat:getDriver() then
             -- Main: Explosion 5000 300 70 3 2--
             if key == IN_KEY.ATTACK then
-                local eye_trace = ply:getEyeTrace()
+                local eye_trace = eyeTrace(ply, {hitbox, seat})
                 createExplosionProj(body.wings.rightblaster:getPos(), (eye_trace.HitPos - body.wings.rightblaster:getPos()):getAngle())
                 createExplosionProj(body.wings.leftblaster:getPos(), (eye_trace.HitPos - body.wings.leftblaster:getPos()):getAngle())
             -- On reload: Radar, that's showing players on a few seconds --
             elseif key == IN_KEY.RELOAD then
                 net.start("UpdatePlayers")
                 net.send(ply)
+            elseif key == IN_KEY.BULLRUSH then
             end
         end
     end)
 
     hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
         if vehicle == seat then
+            ply:setColor(Color(0, 0, 0, 0))
             net.start("OnEnter")
             net.send(ply)
         end
@@ -84,6 +112,7 @@ if SERVER then
 
     hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
         if vehicle == seat then
+            ply:setColor(Color(255, 255, 255, 255))
             net.start("OnLeave")
             net.send(ply)
         end
@@ -93,24 +122,54 @@ if SERVER then
     FTimer:new(6, -1, {
         ["0-0.5"] = function(t, fraction, relative)
             body.base[1]:setLocalPos(body.base[1]:getLocalPos():setZ(6 * math.easeInOutCubic(relative) + 50))
-            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(relative) + 160))
+            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(relative) + 155))
         end,
         ["0.5-1"] = function(t, fraction, relative)
             body.base[1]:setLocalPos(body.base[1]:getLocalPos():setZ(6 * math.easeInOutCubic(1 - relative) + 50))
-            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(1 - relative) + 160))
+            body.head[1]:setLocalPos(body.head[1]:getLocalPos():setZ(8 * math.easeInOutCubic(1 - relative) + 155))
         end
     })
 
 
     -- Wings animation --
-    function closeWings()
-      FTimer:new(2, 1, {
-          ["0-1"] = function(t, fraction, relative)
-              body.wings.leftdown:setLocalAngles(body.wings.leftdown:getLocalAngles():setR(30 * math.easeInOutSine(1 - relative)))
-          end,
-      })
+    function becomeInvisible()
+        FTimer:new(1.5, 1, {
+            ["0-0.75"] = function(t, fraction, relative)
+                body.wings.leftdown:setLocalAngles(body.wings.leftdown:getLocalAngles():setR(-20 * math.easeInCubic(1 - relative) - 95))
+                body.wings.leftup:setLocalAngles(body.wings.leftup:getLocalAngles():setR(20 * math.easeInCubic(1 - relative) - 85))
+                body.wings.rightdown:setLocalAngles(body.wings.rightdown:getLocalAngles():setR(20 * math.easeInCubic(1 - relative) + 95))
+                body.wings.rightup:setLocalAngles(body.wings.rightup:getLocalAngles():setR(-20 * math.easeInCubic(1 - relative) + 85))
+            end,
+            [1] = function()
+                for _, v in ipairs(all_holos) do
+                    v:setColor(v:getColor():setA(0))
+                end
+            end
+        })
     end
-    closeWings()
+    function becomeVisible()
+        FTimer:new(1.5, 1, {
+            [0] = function()
+                for _, v in ipairs(all_holos) do
+                    v:setColor(v:getColor():setA(255))
+                end
+            end,
+            ["0.25-1"] = function(t, fraction, relative)
+                body.wings.leftdown:setLocalAngles(body.wings.leftdown:getLocalAngles():setR(-20 * math.easeOutCubic(relative) - 95))
+                body.wings.leftup:setLocalAngles(body.wings.leftup:getLocalAngles():setR(20 * math.easeOutCubic(relative) - 85))
+                body.wings.rightdown:setLocalAngles(body.wings.rightdown:getLocalAngles():setR(20 * math.easeOutCubic(relative) + 95))
+                body.wings.rightup:setLocalAngles(body.wings.rightup:getLocalAngles():setR(-20 * math.easeOutCubic(relative) + 85))
+            end
+        })
+    end
+
+    net.receive("Invisible", function()
+        if body.base[1]:getColor().a > 0 then
+            becomeInvisible()
+        else
+            becomeVisible()
+        end
+    end)
 else
     --@include astricunion/libs/ui.txt
     require("astricunion/libs/ui.txt")
@@ -160,7 +219,7 @@ else
             local health = player():getHealth() / player():getMaxHealth()
             if not health_bar then
                 health_bar = Bar:new(sw * 0.2, sh * 0.8, 200, 30, 1)
-                    :setLabelLeft("HEALTH")
+                    :setLabelLeft("HP")
             end
             local current = health_bar.current_percent
             health_bar:setPercent(health)
@@ -180,7 +239,7 @@ else
             ---- ESP bar ----
             if not esp_bar then
                 esp_bar = Bar:new(sw * 0.8 - 200, sh * 0.8, 200, 30, 1)
-                    :setLabelRight("RADAR")
+                    :setLabelRight("RDR")
             end
             esp_bar:setPercent(radar_cooldown)
                 :setLabelLeft(tostring(math.round(esp_bar.current_percent * 100)) .. "%")
@@ -194,18 +253,20 @@ else
                 fov = 120
             }
         end)
-    end
 
-    --[[
-    if player() == owner() then
-        enableHud(nil, true)
-        createHud()
+        hook.add("InputPressed", "", function(key)
+            -- Invisible --
+            if key == KEY.F then
+                net.start("Invisible")
+                net.send()
+            end
+        end)
     end
-    ]]--
 
     function removeHud()
         hook.remove("DrawHUD", "")
         hook.remove("CalcView", "")
+        hook.remove("InputPressed", "")
     end
 
     net.receive("OnEnter", function()
