@@ -2,7 +2,7 @@
 --@author Astric Union
 --@shared
 
---@include astricunion/lib/sounds.txt
+--@include astricunion/libs/sounds.txt
 require("astricunion/libs/sounds.txt")
 
 
@@ -19,7 +19,7 @@ if SERVER then
 
 
     preloadSounds(
-        Sound("start", 20, false, "")
+        Sound("start", 20, false, "https://github.com/maxobur0001/AstricUnion/raw/refs/heads/main/sounds/SoundUrl5.mp3")
     )
 
 
