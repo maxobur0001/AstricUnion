@@ -5,7 +5,12 @@
 if SERVER then
     Sound = {}
     Sound.__index = Sound
-    
+
+    --- Sound data
+    ---@param name string Sound name to index
+    ---@param volume number Sound volume
+    ---@param looping boolean Is sound looping
+    ---@param url string Sound URL (I'm recomending DropBox)
     function Sound:new(name, volume, looping, url)
         local self = setmetatable(
             {
@@ -19,10 +24,10 @@ if SERVER then
         return self
     end
     setmetatable(Sound, {__call = Sound.new})
-    
+
     function preloadSounds(...)
-        for _, snd in ipairs({...}) do
-            timer.simple(0.3, function()
+        for i, snd in ipairs({...}) do
+            timer.simple(0.3 * i, function()
                 net.start("preloadSound")
                 net.writeString(snd.url)
                 net.writeString(snd.name)
@@ -32,20 +37,21 @@ if SERVER then
             end)
         end
     end
-    
-    
+
+
     function playSound(name)
         net.start("playSound")
         net.writeString(name)
         net.send(find.allPlayers())
     end
-        
+
+
     function stopSound(name)
         net.start("stopSound")
         net.writeString(name)
         net.send(find.allPlayers())
     end
-    
+
     preloadSounds(
         Sound("scan", 30, true, "https://www.dl.dropboxusercontent.com/scl/fi/cd99n62t66324nb82rogl/sentry-scanning.mp3?rlkey=55wn0lyuy6znyxu0ajiyfspfq&st=1dy0ilxu&dl=1"),
         Sound("spotted", 30, false, "https://www.dl.dropboxusercontent.com/scl/fi/441wna5k93x7se9ga8qao/sentry-spotted.mp3?rlkey=hg2af7b3jtgfh55rwozusupno&st=5yfzzmd3&dl=1"),
@@ -73,7 +79,7 @@ else
             snd:setLooping(loop)
         end)
     end)
-    
+
     net.receive("playSound", function()
         local name = net.readString()
         local sound = SOUNDS[name]
@@ -87,7 +93,7 @@ else
             sound:play()
         end
     end)
-    
+
     net.receive("stopSound", function()
         local name = net.readString()
         local sound = SOUNDS[name]
