@@ -3,20 +3,23 @@
 --@shared
 
 if SERVER then
-    Sound = {}
-    Sound.__index = Sound
 
     --- Sound data
     ---@param name string Sound name to index
     ---@param volume number Sound volume
     ---@param looping boolean Is sound looping
+    ---@param oneshot boolean Sound URL (I'm recomending DropBox)
     ---@param url string Sound URL (I'm recomending DropBox)
-    function Sound:new(name, volume, looping, url)
+    Sound = {}
+    Sound.__index = Sound
+
+    function Sound:new(name, volume, looping, oneshot, url)
         local self = setmetatable(
             {
                 name = name,
                 volume = volume,
-                looping = looping,
+                looping = looping or false,
+                oneshot = oneshot or false,
                 url = url
             },
             Sound
@@ -27,7 +30,7 @@ if SERVER then
 
     function preloadSounds(...)
         for i, snd in ipairs({...}) do
-            timer.simple(0.3 * i, function()
+            timer.simple(1, function()
                 net.start("preloadSound")
                 net.writeString(snd.url)
                 net.writeString(snd.name)
@@ -39,9 +42,10 @@ if SERVER then
     end
 
 
-    function playSound(name)
+    function playSound(name, position)
         net.start("playSound")
         net.writeString(name)
+        net.writeVector(position)
         net.send(find.allPlayers())
     end
 
@@ -73,14 +77,13 @@ else
 
     net.receive("playSound", function()
         local name = net.readString()
+        local pos = net.readVector()
         local sound = SOUNDS[name]
         if sound then
             if not sound:isLooping() then
-                if sound:getTime() == sound:getLength() then
-                    sound:setTime(0)
-                end
+                sound:setTime(0)
             end
-            sound:setPos(chip():getPos())
+            sound:setPos(pos)
             sound:play()
         end
     end)

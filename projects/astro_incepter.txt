@@ -17,10 +17,12 @@ if SERVER then
     require("astricunion/libs/fractional_timers.txt")
     require("astricunion/holos/astro_incepter_holos.txt")
 
-
-    preloadSounds(
-        Sound("start", 20, false, "https://github.com/maxobur0001/AstricUnion/raw/refs/heads/main/sounds/SoundUrl5.mp3")
-    )
+    STATES = {
+        NotInUse = -1,
+        Idle = 0,
+        InHyperJump = 1
+    }
+    local state = STATES.NotInUse
 
 
     local seat = prop.createSeat(chip():getPos() + Vector(0, 0, 120), Angle(), "models/nova/airboat_seat.mdl")
@@ -37,6 +39,17 @@ if SERVER then
         true
     )
     local movement = Movement:new(seat, hitbox)
+
+    preloadSounds(
+        Sound("start", 1, false, true, "https://www.dl.dropboxusercontent.com/scl/fi/9g8sguici6u5vrqx35wpe/ChargeupGUN.mp3?rlkey=mvevntjbjc5y2ht0xmvac88kc&st=5iba01im&dl=1"),
+        Sound("loop", 1, true, false, "https://www.dl.dropboxusercontent.com/scl/fi/n9tzb3v1vs6x1fayy9cig/saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1"),
+        Sound("main", 1, false, false, "https://www.dl.dropboxusercontent.com/scl/fi/1rs1z4ngav46nu71xs9cs/MegaBlaster.mp3?rlkey=cvjmd7fk2gal7sjpzumnahny2&st=c5l33h07&dl=1"),
+        Sound("mainReload", 1, false, false, "https://www.dl.dropboxusercontent.com/scl/fi/1hdis324ztuy26ybm99f2/AstrSHOOT1.mp3?rlkey=f3nzk6gz4qnsxcnr7dwvdos0w&st=vkytslx6&dl=1"),
+        Sound("blaster", 1, false, false, "https://www.dl.dropboxusercontent.com/scl/fi/iridtegm6vcn0vrgx6mz8/Blasters.mp3?rlkey=tx18scvy2ujjbffebtrmvd8yl&st=nb1ikfyk&dl=1")
+    )
+    timer.simple(4, function()
+        playSound("start", chip():getPos())
+    end)
 
     body.base[1]:setParent(hitbox)
     body.base[2]:setParent(body.base[1])
@@ -71,9 +84,14 @@ if SERVER then
     ]]-- (не смешно, извините)
 
     hook.add("Think", "Movement", function()
+        if state ~= STATES.InHyperJump then
+            playSound("loop", hitbox:getPos())
+        else
+            stopSound("loop")
+        end
         local driver = seat:getDriver()
         if isValid(driver) then
-            local eye_trace = eyeTrace(driver, {hitbox, seat})
+            local eye_trace = driver:getEyeTrace()
             body.head[1]:setAngles(driver:getEyeAngles())
             body.head[2]:setAngles(driver:getEyeAngles())
             body.wings.rightblaster:setAngles((body.wings.rightblaster:getPos() - eye_trace.HitPos):getAngle() + Angle(-90, 0, 0))
@@ -85,16 +103,59 @@ if SERVER then
     end)
 
     function createExplosionProj(pos, angle)
-        Explosion:new(pos, angle, 5000, 300, 70, nil, 2)
+        Explosion:new(pos, angle, 3000, 300, 70, nil, 2)
     end
 
+    function createBulletProj(pos, angle)
+        Blaster:new(pos, angle)
+    end
+
+    local blaster_cooldown = 0
+    local explosion_cooldown = 5
+    hook.add("Think", "Shoot", function()
+        if state == STATES.InHyperJump then return end
+        local driver = seat:getDriver()
+        if explosion_cooldown < 15 then
+            explosion_cooldown = explosion_cooldown + 0.1
+        end
+        if blaster_cooldown < 4 then
+            blaster_cooldown = blaster_cooldown + 1
+        end
+        if isValid(driver) then
+            if driver:keyDown(IN_KEY.ATTACK2) then
+                if blaster_cooldown >= 4 then
+                    blaster_cooldown = 0
+                else
+                    return
+                end
+                playSound("blaster", hitbox:getPos())
+                local eye_trace = driver:getEyeTrace()
+                if effect.effectsLeft() > 0 then
+                    createBulletProj(body.wings.rightblaster:getPos(), (eye_trace.HitPos - body.wings.rightblaster:getPos()):getAngle())
+                    createBulletProj(body.wings.leftblaster:getPos(), (eye_trace.HitPos - body.wings.leftblaster:getPos()):getAngle())
+                end
+            end
+        end
+    end)
+
+
     hook.add("KeyPress", "", function(ply, key)
+        if state == STATES.InHyperJump then return end
         if ply == seat:getDriver() then
-            -- Main: Explosion 5000 300 70 3 2--
-            if key == IN_KEY.ATTACK then
-                local eye_trace = eyeTrace(ply, {hitbox, seat})
-                createExplosionProj(body.wings.rightblaster:getPos(), (eye_trace.HitPos - body.wings.rightblaster:getPos()):getAngle())
-                createExplosionProj(body.wings.leftblaster:getPos(), (eye_trace.HitPos - body.wings.leftblaster:getPos()):getAngle())
+            if state ~= STATES.InHyperJump then
+                -- Main: Explosion --
+                if key == IN_KEY.ATTACK then
+                    if explosion_cooldown >= 15 then
+                        explosion_cooldown = 0
+                    else
+                        return
+                    end
+                    playSound("main", hitbox:getPos())
+                    local eye_trace = ply:getEyeTrace()
+                    createExplosionProj(body.wings.rightblaster:getPos(), (eye_trace.HitPos - body.wings.rightblaster:getPos()):getAngle())
+                    createExplosionProj(body.wings.leftblaster:getPos(), (eye_trace.HitPos - body.wings.leftblaster:getPos()):getAngle())
+                    playSound("mainReload", hitbox:getPos())
+                end
             -- On reload: Radar, that's showing players on a few seconds --
             elseif key == IN_KEY.RELOAD then
                 net.start("UpdatePlayers")
@@ -105,6 +166,8 @@ if SERVER then
 
     hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
         if vehicle == seat then
+            vehicle:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
+            state = STATES.Idle
             ply:setColor(Color(0, 0, 0, 0))
             net.start("OnEnter")
             net.send(ply)
@@ -113,6 +176,8 @@ if SERVER then
 
     hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
         if vehicle == seat then
+            vehicle:setCollisionGroup(COLLISION_GROUP.VEHICLE)
+            state = STATES.NotInUse
             ply:setColor(Color(255, 255, 255, 255))
             net.start("OnLeave")
             net.send(ply)
@@ -147,6 +212,7 @@ if SERVER then
     function becomeInvisible()
         FTimer:new(1.5, 1, {
             ["0-0.75"] = function(t, fraction, relative)
+                state = STATES.InHyperJump
                 local smoothed = math.easeInCubic(relative)
                 body.wings.leftdown:setLocalAngles(left_down_angles + Angle(0, 0, 25 * smoothed))
                 body.wings.leftup:setLocalAngles(left_up_angles + Angle(0, 0, -25 * smoothed))
@@ -165,6 +231,7 @@ if SERVER then
     function becomeVisible()
         FTimer:new(1.5, 1, {
             [0] = function()
+                state = STATES.Idle
                 hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
                 for _, v in ipairs(all_holos) do
                     v:setColor(v:getColor():setA(255))
@@ -220,6 +287,8 @@ else
 
         hook.add("DrawHUD", "", function()
             sw, sh = render.getGameResolution()
+            ---- CPU ----
+            render.drawText(100, 100, tostring(cpuTotalUsed()) .. " us")
 
             ---- Aim ----
             local eye_trace = player():getEyeTrace()

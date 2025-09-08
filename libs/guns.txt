@@ -2,7 +2,7 @@
 --@author AstricUnion
 --@server
 
-local explosions = {}
+local projectiles = {}
 
 ---------------------- Explosion projectile for gun ----------------------
 Explosion = {}
@@ -41,7 +41,7 @@ function Explosion:new(position, angle, velocity, radius, damage, timeout, scale
         },
         Explosion
     )
-    table.insert(explosions, self)
+    table.insert(projectiles, self)
     timer.simple(timeout or 3, function()
         if not isValid(self.holo) then
             return
@@ -64,7 +64,7 @@ function Explosion:explode(pos)
     eff:play("Explosion")
     self.holo:remove()
     game.blastDamage(pos, self.radius, self.damage)
-    table.removeByValue(explosions, self)
+    table.removeByValue(projectiles, self)
 end
 
 function Explosion:think()
@@ -76,14 +76,78 @@ function Explosion:think()
     end
 end
 
+
+
+
+---------------------- Blaster projectile ----------------------
+Blaster = {}
+Blaster.__index = Blaster
+
+---Create new blaster projectile 
+---@param position Vector Position of a projectile 
+---@param angle Angle Angle and direction of a projectile
+---@param velocity number | nil Velocity of a projectile. Default 10000
+---@param damage number | nil Maximum damage of a projectile explosion. Default 50
+---@return Blaster object
+function Blaster:new(position, angle, velocity, damage)
+    local velocity = velocity or 10000
+    local scale = scale or 1
+    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(4, 1, -1) * scale)
+    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.6, 0.9, -0.9) * scale)
+    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.2, 0.8, 0.8) * scale)
+    holo:suppressEngineLighting(true)
+    holo:setTrails(32, 0, 0.01, "effects/beam_generic01", Color(255, 0, 0))
+    holo2:suppressEngineLighting(true)
+    holo3:suppressEngineLighting(true)
+    holo:setColor(Color(255, 0, 0))
+    holo2:setColor(Color(250, 200, 200))
+    holo2:setParent(holo)
+    holo3:setParent(holo)
+    holo:setVelocity(velocity * holo:getForward())
+    local self = setmetatable(
+        {
+            holo = holo,
+            ray_length = velocity / 50,
+            damage = damage or 50,
+            radius = 5
+        },
+        Blaster
+    )
+    table.insert(projectiles, self)
+    timer.simple(timeout or 3, function()
+        if not isValid(self.holo) then
+            return
+        end
+        self:explode(self.holo:getPos())
+    end)
+    return self
+end
+
+
+--[[
+    Explodes projectile on position and deletes it
+    @param pos Position of explode
+]]
+function Blaster:explode(pos)
+    self.holo:remove()
+    game.blastDamage(pos, self.radius, self.damage)
+    table.removeByValue(projectiles, self)
+end
+
+function Blaster:think()
+    local pos = self.holo:getPos()
+    local forward = self.holo:getForward()
+    local trace_result = trace.line(pos - forward * self.ray_length, pos + forward * self.ray_length, nil, MASK.SHOT_HULL)
+    if trace_result.Hit then
+        self:explode(trace_result.HitPos)
+    end
+end
+
 hook.add("Think", "ExplosionProjectiles", function()
-    for _, explosion in ipairs(explosions) do
-        explosion:think()
+    for _, proj in ipairs(projectiles) do
+        proj:think()
     end
 end)
 
 
-
-
----------------------- Laser ----------------------
 
