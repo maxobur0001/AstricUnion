@@ -21,8 +21,8 @@ Movement.__index = Movement
     Movement object. Implementing movement behaviour for bot.
     @param seat Seat to use with bot
     @param hitbox Hitbox to use with bot (collision model)
-    @param speed Bot maximum speed. Default 200
-    @param sprint Bot sprint maximum speed. Default 400
+    @param speed Bot maximum speed. Default 400
+    @param sprint Bot sprint maximum speed. Default 800
     @param sharpness Bot speed sharpness. Default 6
     @return Movement object
 ]]--
@@ -34,8 +34,8 @@ function Movement:new(seat, hitbox, speed, sprint, sharpness)
     seat:setCollisionGroup(COLLISION_GROUP.NONE)
     local self = setmetatable(
         {
-            speed = speed or 200,
-            sprint = sprint or 500,
+            speed = speed or 400,
+            sprint = sprint or 800,
             velocity = Vector(),
             sharpness = sharpness or 2,
             hitbox = hitbox,

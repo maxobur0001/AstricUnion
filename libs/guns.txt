@@ -1,117 +1,50 @@
 --@name Projectiles, damage and ETC
 --@author AstricUnion
 --@server
+--@include astricunion/libs/fractional_timers.txt
+
+require("astricunion/libs/fractional_timers.txt")
 
 local projectiles = {}
 
----------------------- Explosion projectile for gun ----------------------
-Explosion = {}
-Explosion.__index = Explosion
-
----Create new explosion projectile 
----@param position Vector Position of a projectile 
----@param angle Angle Angle and direction of a projectile
----@param velocity number | nil Velocity of a projectile. Default 2000
----@param radius number | nil Radius of a projectile explosion. Default 200
----@param damage number | nil Maximum damage of a projectile explosion. Default 50
----@param timeout number | nil Timeout of a projectile. Default 3
----@param scale number | nil Timeout of a projectile. Default 3
----@return Explosion object
-function Explosion:new(position, angle, velocity, radius, damage, timeout, scale)
-    local velocity = velocity or 2000
-    local scale = scale or 1
-    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(2, 2, -2) * scale)
-    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.8, 1.8, -1.8) * scale)
-    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(1.6, 1.6, 1.6) * scale)
-    holo:suppressEngineLighting(true)
-    holo:setTrails(32, 0, 0.01, "effects/beam_generic01", Color(255, 0, 0))
-    holo2:suppressEngineLighting(true)
-    holo3:suppressEngineLighting(true)
-    holo:setColor(Color(255, 0, 0))
-    holo2:setColor(Color(250, 200, 200))
-    holo2:setParent(holo)
-    holo3:setParent(holo)
-    holo:setVelocity(velocity * holo:getForward())
-    local self = setmetatable(
-        {
-            holo = holo,
-            ray_length = velocity / 50,
-            radius = radius or 200,
-            damage = damage or 50
-        },
-        Explosion
-    )
-    table.insert(projectiles, self)
-    timer.simple(timeout or 3, function()
-        if not isValid(self.holo) then
-            return
-        end
-        self:explode(self.holo:getPos())
-    end)
-    return self
-end
-
-
---[[
-    Explodes projectile on position and deletes it
-    @param pos Position of explode
-]]
-function Explosion:explode(pos)
-    local eff = effect.create()
-    eff:setOrigin(pos)
-    eff:setMagnitude(self.radius / 40)
-    eff:setScale(self.radius / 40)
-    eff:play("Explosion")
-    self.holo:remove()
-    game.blastDamage(pos, self.radius, self.damage)
-    table.removeByValue(projectiles, self)
-end
-
-function Explosion:think()
-    local pos = self.holo:getPos()
-    local forward = self.holo:getForward()
-    local trace_result = trace.line(pos - forward * self.ray_length, pos + forward * self.ray_length, nil, MASK.SHOT_HULL)
-    if trace_result.Hit then
-        self:explode(trace_result.HitPos)
-    end
-end
-
-
-
 
 ---------------------- Blaster projectile ----------------------
-Blaster = {}
-Blaster.__index = Blaster
+BlasterProjectile = {}
+BlasterProjectile.__index = BlasterProjectile
 
 ---Create new blaster projectile 
 ---@param position Vector Position of a projectile 
 ---@param angle Angle Angle and direction of a projectile
 ---@param velocity number | nil Velocity of a projectile. Default 10000
+---@param scale number | nil Scale of a projectile. Default 1
 ---@param damage number | nil Maximum damage of a projectile explosion. Default 50
----@return Blaster object
-function Blaster:new(position, angle, velocity, damage)
+---@return BlasterProjectile object
+function BlasterProjectile:new(blaster, position, angle, scale, velocity, damage)
     local velocity = velocity or 10000
+    local position = position
     local scale = scale or 1
-    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(4, 1, -1) * scale)
-    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.6, 0.9, -0.9) * scale)
-    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.2, 0.8, 0.8) * scale)
+    local holo = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(4, 0.5, -0.5) * scale)
+    local holo2 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.6, 0.45, -0.45) * scale)
+    local holo3 = hologram.create(position, angle, "models/holograms/hq_sphere.mdl", Vector(3.2, 0.4, 0.4) * scale)
     holo:suppressEngineLighting(true)
-    holo:setTrails(32, 0, 0.01, "effects/beam_generic01", Color(255, 0, 0))
+    holo:setTrails(scale * 15, 0, 0, "effects/beam_generic01", Color(255, 0, 0))
     holo2:suppressEngineLighting(true)
     holo3:suppressEngineLighting(true)
     holo:setColor(Color(255, 0, 0))
     holo2:setColor(Color(250, 200, 200))
     holo2:setParent(holo)
     holo3:setParent(holo)
-    holo:setVelocity(velocity * holo:getForward())
+    holo:setVelocity(velocity * angle:getForward())
     local self = setmetatable(
         {
             holo = holo,
-            ray_length = velocity / 50,
+            ray_length = velocity / 25,
+            velocity = velocity,
             damage = damage or 50,
-            radius = 5
+            radius = 5,
+            blaster = blaster
         },
-        Blaster
+        BlasterProjectile
     )
     table.insert(projectiles, self)
     timer.simple(timeout or 3, function()
@@ -124,20 +57,20 @@ function Blaster:new(position, angle, velocity, damage)
 end
 
 
---[[
-    Explodes projectile on position and deletes it
-    @param pos Position of explode
-]]
-function Blaster:explode(pos)
-    self.holo:remove()
+---Explodes projectile on position and deletes it
+---@param pos Position of explode
+function BlasterProjectile:explode(pos)
+    timer.simple(0.1, function()
+        self.holo:remove()
+    end)
     game.blastDamage(pos, self.radius, self.damage)
     table.removeByValue(projectiles, self)
 end
 
-function Blaster:think()
+function BlasterProjectile:think()
     local pos = self.holo:getPos()
     local forward = self.holo:getForward()
-    local trace_result = trace.line(pos - forward * self.ray_length, pos + forward * self.ray_length, nil, MASK.SHOT_HULL)
+    local trace_result = trace.line(pos, pos + forward * self.ray_length, self.blaster, MASK.SHOT_HULL)
     if trace_result.Hit then
         self:explode(trace_result.HitPos)
     end
@@ -150,4 +83,58 @@ hook.add("Think", "ExplosionProjectiles", function()
 end)
 
 
+Blaster = {}
+Blaster.__index = Blaster
+
+
+function Blaster:new(pos)
+    local holo = hologram.create(pos, Angle(), "models/props_c17/oildrum001_explosive.mdl")
+    local hitbox = prop.create(pos, Angle(), "models/props_c17/oildrum001.mdl", true)
+    hitbox:setColor(Color(0, 0, 0, 0))
+    holo:setParent(hitbox)
+    local self = setmetatable(
+        {
+            holo = holo,
+            hitbox = hitbox,
+            reloadtimer = "blasterReload" .. tostring(holo:entIndex()),
+            ammo = 4
+        },
+        Blaster
+    )
+    return self
+end
+
+
+function Blaster:shoot()
+    if self.ammo == 0 then
+        return
+    end
+    FTimer:new(0.2, 1, {
+        ["0-0.5"] = function(_, _, fraction)
+            local smoothed = fraction
+            self.holo:setLocalPos(Vector(0, 0, -3 * smoothed))
+        end,
+        ["0.5-1"] = function(_, _, fraction)
+            local smoothed = 1 - fraction
+            self.holo:setLocalPos(Vector(0, 0, -3 * smoothed))
+        end,
+        [1] = function()
+            self.holo:setLocalPos(Vector(0, 0, 0))
+        end
+    })
+    BlasterProjectile:new(self.hitbox, self.hitbox:getPos(), self.hitbox:getUp():getAngle())
+    self.ammo = self.ammo - 1
+    if !timer.exists(self.reloadtimer) and self.ammo == 0 then
+        timer.create(self.reloadtimer, 0.5, 1, function()
+            print(self.ammo)
+            self.ammo = 4
+        end)
+        FTimer:new(0.5, 1, {
+            ["0-1"] = function(_, _, fraction)
+                local smoothed = math.easeInOutSine(fraction)
+                self.holo:setLocalAngles(Angle(0, 360 * smoothed, 0))
+            end
+        })
+    end
+end
 

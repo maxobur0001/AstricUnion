@@ -164,6 +164,10 @@ if SERVER then
                 elseif key == IN_KEY.RELOAD then
                     net.start("UpdatePlayers")
                     net.send(ply)
+                elseif key == IN_KEY.ALT1 then
+                    timer.create("dash", 0, 20, function()
+                        hitbox:addVelocity(hitbox:getForward() * 20000)
+                    end)
                 end
             end
         end
