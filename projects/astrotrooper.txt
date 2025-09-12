@@ -60,8 +60,8 @@ if SERVER then
             local eye_trace = driver:getEyeTrace()
             body.head[1]:setAngles(driver:getEyeAngles())
         end
-        --[[local angs = body.base[2]:getLocalAngles()
-        body.base[2]:setLocalAngles(angs:setY(angs.y + 5))]]
+        local angs = body.base[2]:getLocalAngles()
+        body.base[2]:setLocalAngles(angs + Angle(0, 5, 0))
         movement:think()
     end)
 else

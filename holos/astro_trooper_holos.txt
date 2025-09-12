@@ -9,13 +9,13 @@ require("astricunion/libs/holos.txt")
 body = {
     base = {
         hologram.createPart(
+            Holo(SubHolo(Vector(0,0,0),Angle(0,0,0),"models/props_combine/combine_train02a.mdl",Vector(0.1,0.1,0.06),false,Color(255,40,40))),
             Holo(SubHolo(Vector(32,0,2),Angle(15,0,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.15),false,Color(255,40,40))),
             Holo(SubHolo(Vector(29,14,2),Angle(15,30,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.15),false,Color(255,40,40))),
             Holo(SubHolo(Vector(29,-14,2),Angle(15,-30,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.15),false,Color(255,40,40))),
             Holo(SubHolo(Vector(-32,0,5),Angle(15,180,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.2),false,Color(255,40,40))),
             Holo(SubHolo(Vector(-29,14,2),Angle(15,150,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.15),false,Color(255,40,40))),
             Holo(SubHolo(Vector(-29,-14,2),Angle(15,210,180),"models/props_combine/combine_barricade_med01b.mdl",Vector(0.15,0.15,0.15),false,Color(255,40,40))),
-            Holo(SubHolo(Vector(0,0,0),Angle(0,0,0),"models/props_combine/combine_train02a.mdl",Vector(0.1,0.1,0.06),false,Color(255,40,40))),
             Holo(SubHolo(Vector(0,0,0),Angle(0,90,0),"models/props_combine/combine_train02a.mdl",Vector(0.1,0.1,0.06),false,Color(255,40,40))),
             Holo(SubHolo(Vector(0,0,0),Angle(0,-90,0),"models/props_combine/combine_train02a.mdl",Vector(0.1,0.1,0.06),false,Color(255,40,40))),
             Holo(SubHolo(Vector(0,0,0),Angle(0,180,0),"models/props_combine/combine_train02a.mdl",Vector(0.1,0.1,0.06),false,Color(255,40,40))),
