@@ -2,8 +2,10 @@
 --@author AstricUnion
 --@server
 --@include astricunion/libs/fractional_timers.txt
+--@include astricunion/libs/holos.txt
 
 require("astricunion/libs/fractional_timers.txt")
+require("astricunion/libs/holos.txt")
 
 local projectiles = {}
 
@@ -40,7 +42,7 @@ function BlasterProjectile:new(blaster, position, angle, scale, velocity, damage
             holo = holo,
             ray_length = velocity / 25,
             velocity = velocity,
-            damage = damage or 50,
+            damage = damage or 60,
             radius = 5,
             blaster = blaster
         },
@@ -83,19 +85,36 @@ hook.add("Think", "ExplosionProjectiles", function()
 end)
 
 
+----- Trooper blaster -----
 Blaster = {}
 Blaster.__index = Blaster
 
 
-function Blaster:new(pos)
-    local holo = hologram.create(pos, Angle(), "models/props_c17/oildrum001_explosive.mdl")
-    local hitbox = prop.create(pos, Angle(), "models/props_c17/oildrum001.mdl", true)
+function Blaster:new(pos, bot_hitbox)
+    local holo = hologram.createPart(
+        Holo(SubHolo(Vector(-5,0,2),Angle(0,0,0),"models/hunter/blocks/cube025x025x025.mdl",Vector(1,1,1),false,Color(255,0,0,0))),
+        Holo(SubHolo(Vector(-28,0,-2),Angle(180,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+        Holo(SubHolo(Vector(-28,0,6),Angle(0,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+        Holo(SubHolo(Vector(-28,-5,2),Angle(-90,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+        Holo(SubHolo(Vector(-28,5,2),Angle(90,90,90),"models/props_combine/combinethumper001a.mdl",Vector(0.08,0.08,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+        Holo(SubHolo(Vector(-19,0,12),Angle(180,0,0),"models/combine_dropship_container.mdl",Vector(0.12,0.12,0.12),false,Color(255,40,40),"models/props_combine/metal_combinebridge001")),
+        Holo(SubHolo(Vector(25,0,2),Angle(90,0,0),"models/Items/combine_rifle_ammo01.mdl",Vector(1.8,1.8,1.8),false,Color(255,40,40)))
+    )
+    local x, y, z = 50, 10, 10
+    local hitbox = prop.createCustom(pos, Angle(), {{
+        Vector(-x / 2, -y, -z), Vector(x, -y, -z), Vector(x, y, -z), Vector(-x / 2, y, -z),
+        Vector(-x / 2, -y, z), Vector(x, -y, z), Vector(x, y, z), Vector(-x / 2, y, z),
+    }}, true)
     hitbox:setColor(Color(0, 0, 0, 0))
+    holo:setPos(pos)
     holo:setParent(hitbox)
+    hitbox:setParent(bot_hitbox)
+    hitbox:setMass(200)
     local self = setmetatable(
         {
             holo = holo,
             hitbox = hitbox,
+            hp = 500,
             reloadtimer = "blasterReload" .. tostring(holo:entIndex()),
             ammo = 4
         },
@@ -111,30 +130,53 @@ function Blaster:shoot()
     end
     FTimer:new(0.2, 1, {
         ["0-0.5"] = function(_, _, fraction)
-            local smoothed = fraction
-            self.holo:setLocalPos(Vector(0, 0, -3 * smoothed))
+            local smoothed = math.easeInCubic(fraction)
+            self.holo:setLocalPos(Vector(-smoothed, 0, 0))
         end,
         ["0.5-1"] = function(_, _, fraction)
-            local smoothed = 1 - fraction
-            self.holo:setLocalPos(Vector(0, 0, -3 * smoothed))
+            local smoothed = math.easeOutCubic(1 - fraction)
+            self.holo:setLocalPos(Vector(-smoothed, 0, 0))
         end,
         [1] = function()
             self.holo:setLocalPos(Vector(0, 0, 0))
         end
     })
-    BlasterProjectile:new(self.hitbox, self.hitbox:getPos(), self.hitbox:getUp():getAngle())
+    BlasterProjectile:new(self.hitbox, self.hitbox:getPos(), self.hitbox:getAngles())
     self.ammo = self.ammo - 1
-    if !timer.exists(self.reloadtimer) and self.ammo == 0 then
+    if !timer.exists(self.reloadtimer) and self.ammo == 0 and self:isAlive() then
         timer.create(self.reloadtimer, 0.5, 1, function()
             print(self.ammo)
             self.ammo = 4
         end)
         FTimer:new(0.5, 1, {
             ["0-1"] = function(_, _, fraction)
-                local smoothed = math.easeInOutSine(fraction)
-                self.holo:setLocalAngles(Angle(0, 360 * smoothed, 0))
+                local smoothed = math.easeInOutElastic(fraction)
+                self.holo:setLocalAngles(Angle(360 * smoothed, 0, 0))
             end
         })
     end
+end
+
+
+function Blaster:damage(amount)
+    if not self:isAlive() then return end
+    self.hp = self.hp - amount
+    if not self:isAlive() then
+        local parented_pos = self.hitbox:getPos()
+        self.hitbox:setParent(nil)
+        self.hitbox:setPos(parented_pos)
+        self.hitbox:setFrozen(false)
+        local eff = effect.create()
+        eff:setOrigin(parented_pos)
+        eff:setScale(0.01)
+        eff:setMagnitude(0.01)
+        eff:play("explosion")
+        self.hitbox:emitSound("weapons/underwater_explode3.wav")
+    end
+end
+
+
+function Blaster:isAlive()
+    return self.hp > 0
 end
 

@@ -1,4 +1,4 @@
---@name Astro Incepter (WIP)
+--@name Astro Incepter (ARCHIVED, DOESN'T WORK)
 --@author Astric Union
 --@shared
 

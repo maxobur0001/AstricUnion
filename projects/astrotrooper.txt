@@ -5,26 +5,35 @@
 --@include astricunion/libs/sounds.txt
 require("astricunion/libs/sounds.txt")
 
-if SERVER then 
+-- To add filter --
+function eyeTrace(ply, filter)
+    local pos = ply:getEyePos()
+    local ang = ply:getEyeAngles()
+    return trace.line(pos, pos + ang:getForward() * 16384, filter)
+end
+
+if SERVER then
     --@include astricunion/libs/movement.txt
     --@include astricunion/libs/guns.txt
     --@include astricunion/libs/fractional_timers.txt
     --@include astricunion/holos/astro_trooper_holos.txt
-    
+
     require("astricunion/libs/movement.txt")
     require("astricunion/libs/guns.txt")
     require("astricunion/libs/fractional_timers.txt")
     require("astricunion/holos/astro_trooper_holos.txt")
-    
-    STATES = {
-        NotInUse = -1,
-        Idle = 0
-    }
-    local state = STATES.NotInUse
-    
-    
-    
-    local seat = prop.createSeat(chip():getPos() + Vector(0, 0, -12), Angle(), "models/nova/airboat_seat.mdl")
+
+    function createLight(parent, offset, size, brightness, color)
+        net.start("Light")
+        net.writeEntity(parent)
+        net.writeVector(offset)
+        net.writeInt(size, 32)
+        net.writeInt(brightness, 32)
+        net.writeColor(color)
+        net.send(find.allPlayers())
+    end
+
+    local seat = prop.createSeat(chip():getPos() + Vector(0, 0, -6), Angle(), "models/nova/airboat_seat.mdl")
     local size = Vector(50, 50, 20)
     local hitbox = prop.createCustom(
         chip():getPos() + Vector(-size.x/2, -size.y/2, -15),
@@ -37,33 +46,234 @@ if SERVER then
         },
         true
     )
+    hitbox:setColor(Color(255, 255, 255, 0))
+    local headsize = Vector(24, 24, 24)
+    local head_hitbox = prop.createCustom(
+        chip():getPos() + Vector(-headsize.x/2, -headsize.y/2, 15),
+        Angle(),
+        {
+            {
+                Vector(0, 0, 0), Vector(headsize.x, 0, 0), Vector(headsize.x, headsize.y, 0), Vector(0, headsize.y, 0),
+                Vector(0, 0, headsize.z), Vector(headsize.x, 0, headsize.z), Vector(headsize.x, headsize.y, headsize.z), Vector(0, headsize.y, headsize.z),
+            },
+        },
+        true
+    )
+    head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
+    head_hitbox:setMass(100)
+    head_hitbox:setColor(Color(255, 255, 255, 0))
+    timer.simple(1, function()
+        createLight(body.base[1], Vector(0, 0, 20), 80, 10, Color(255, 0, 0))
+        createLight(body.base[1], Vector(0, 0, -10), 80, 10, Color(255, 0, 0))
+    end)
     local movement = Movement:new(seat, hitbox)
-    
-    
-    
+    local blaster = {
+        left = Blaster:new(chip():getPos() + Vector(0, 40, 0)),
+        right = Blaster:new(chip():getPos() + Vector(0, -40, 0))
+    }
+
     body.base[1]:setParent(hitbox)
     body.base[2]:setParent(body.base[1])
     body.base[3]:setParent(body.base[1])
-    body.head[1]:setParent(body.base[1])
-    body.leftblaster[1]:setParent(body.base[1])
-    body.rightblaster[1]:setParent(body.base[1])
+    body.base[4]:setParent(body.base[1])
+    body.head:setParent(body.base[1])
+    head_hitbox:setParent(body.head)
+    blaster.left.hitbox:setParent(body.base[1])
+    blaster.right.hitbox:setParent(body.base[1])
     hitbox:setPos(hitbox:getPos() + Vector(0, 0, 35))
-    
-    --[[local all_holos = {}
-    table.insert(all_holos, body.base[1])
-    table.insert(all_holos, body.rightblaster)
-    table.insert(all_holos, body.leftblaster)]]
-    
+
+    -- Idle animation --
+    local base_pos = body.base[1]:getLocalPos()
+    local head_pos = body.head:getLocalPos()
+    local idle = FTimer:new(4, -1, {
+        ["0-0.5"] = function(t, fraction, relative)
+            local smoothed = math.easeInOutSine(relative)
+            body.base[1]:setLocalPos(base_pos + Vector(0, 0, 2 * smoothed))
+            body.head:setLocalPos(head_pos + Vector(-2 * smoothed, 0, 3 * smoothed))
+            body.head:setLocalAngles(Angle(-4 * smoothed, 0, 0))
+        end,
+        ["0.5-1"] = function(t, fraction, relative)
+            local smoothed = math.easeInOutSine(1 - relative)
+            body.base[1]:setLocalPos(base_pos + Vector(0, 0, 2 * smoothed))
+            body.head:setLocalPos(head_pos + Vector(-2 * smoothed, 0, 3 * smoothed))
+            body.head:setLocalAngles(Angle(-4 * smoothed, 0, 0))
+        end
+    })
+
     hook.add("Think", "Movement", function()
         local driver = seat:getDriver()
         if isValid(driver) then
-            local eye_trace = driver:getEyeTrace()
-            body.head[1]:setAngles(driver:getEyeAngles())
+            local eye_trace = eyeTrace(driver, {hitbox, blaster.left.hitbox, blaster.right.hitbox, head_hitbox})
+            body.head:setAngles(driver:getEyeAngles())
+            if blaster.left:isAlive() then
+                blaster.left.hitbox:setAngles((eye_trace.HitPos - blaster.left.hitbox:getPos()):getAngle())
+            end
+            if blaster.right:isAlive() then
+                blaster.right.hitbox:setAngles((eye_trace.HitPos - blaster.right.hitbox:getPos()):getAngle())
+            end
         end
         local angs = body.base[2]:getLocalAngles()
         body.base[2]:setLocalAngles(angs + Angle(0, 5, 0))
+        local angs = body.base[3]:getLocalAngles()
+        body.base[3]:setLocalAngles(angs - Angle(0, 5, 0))
+        local angs = body.base[4]:getLocalAngles()
+        body.base[4]:setLocalAngles(angs + Angle(0, 5, 0))
         movement:think()
     end)
+
+    hook.add("KeyPress", "Blasters", function(ply, key)
+        local dr = seat:getDriver()
+        if ply ~= dr then return end
+
+        -- MOUSE1: Blaster
+        if key == IN_KEY.ATTACK then
+            if blaster.left:isAlive() and blaster.right:isAlive() then
+                if blaster.left.ammo == blaster.right.ammo then
+                    blaster.left:shoot()
+                else
+                    blaster.right:shoot()
+                end
+            else
+                if blaster.left:isAlive() then
+                    blaster.left:shoot()
+                elseif blaster.right:isAlive() then
+                    blaster.right:shoot()
+                end
+            end
+
+        -- G: Dash --
+        elseif key == IN_KEY.ALT1 then
+            local velocity = 30000
+            timer.create("dash", 0, 30, function()
+                velocity = math.lerp(0.2, velocity, 0)
+                hitbox:addVelocity(hitbox:getForward() * velocity)
+            end)
+
+        elseif key == IN_KEY.ATTACK2 then
+            hitbox:applyDamage(1000)
+        end
+    end)
+
+    hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
+        if vehicle == seat then
+            vehicle:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
+            ply:setColor(Color(255, 255, 255, 0))
+            net.start("OnEnter")
+            net.send(ply)
+        end
+    end)
+
+    hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
+        if vehicle == seat then
+            vehicle:setCollisionGroup(COLLISION_GROUP.VEHICLE)
+            ply:setColor(Color(255, 255, 255, 255))
+            net.start("OnLeave")
+            net.send(ply)
+        end
+    end)
+
+    hook.add("EntityTakeDamage", "health", function(target, _, _, amount)
+        if target == blaster.left.hitbox then
+            blaster.left:damage(amount)
+        elseif target == blaster.right.hitbox then
+            blaster.right:damage(amount)
+        elseif target == hitbox then
+            movement:damage(amount, function()
+                blaster.left:damage(500)
+                blaster.right:damage(500)
+                idle:remove()
+                head_hitbox:setParent(nil)
+                body.head:setParent(head_hitbox)
+                head_hitbox:setFrozen(false)
+                head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
+                head_hitbox:setPos(head_hitbox:getPos())
+                hook.remove("KeyPress", "Blasters")
+                hook.remove("Think", "Movement")
+                hook.remove("EntityTakeDamage", "health")
+                hook.remove("EntityTakeDamage", "DriverDefense")
+            end)
+        end
+    end)
+
+    hook.add("EntityTakeDamage", "DriverDefense", function(target, _, _)
+        if target == seat:getDriver() then return true end
+    end)
 else
-    
+    --@include astricunion/libs/ui.txt
+    require("astricunion/libs/ui.txt")
+
+    function createHud()
+        hook.add("DrawHUD", "", function()
+            sw, sh = render.getGameResolution()
+
+            ---- Aim ----
+            render.drawCircle(sw / 2, sh / 2, 1)
+
+            ---- HP bar ----
+            local health = player():getHealth() / player():getMaxHealth()
+            if not health_bar then
+                health_bar = Bar:new(sw * 0.2, sh * 0.8, 200, 30, 1)
+                    :setLabelLeft("HP")
+            end
+            local current = health_bar.current_percent
+            health_bar:setPercent(health)
+                :setLabelRight(tostring(math.round(current * 100)) .. "%")
+                :setBarColor(Color(255, 255, 255, 255) * Color(1, current, current, 1))
+            health_bar:draw()
+        end)
+
+        hook.add("CalcView", "", function(pos, ang, fov, znear, zfar)
+            return {
+                origin = pos + ang:getForward() * 32,
+                angles = ang,
+                fov = 120
+            }
+        end)
+    end
+
+    function removeHud()
+        hook.remove("DrawHUD", "")
+        hook.remove("CalcView", "")
+        hook.remove("InputPressed", "")
+    end
+
+    net.receive("OnEnter", function()
+        timer.simple(2, function()
+            enableHud(player(), true)
+            createHud()
+        end)
+    end)
+
+    net.receive("OnLeave", function()
+        enableHud(player(), false)
+        removeHud()
+    end)
+
+    local lights = {}
+
+    net.receive("Light", function()
+        net.readEntity(function(ent)
+            local offset = net.readVector()
+            table.insert(
+                lights,
+                {
+                    light.create(
+                        ent:getPos() + offset,
+                        net.readInt(32),
+                        net.readInt(32),
+                        net.readColor()
+                    ),
+                    ent,
+                    offset
+                }
+            )
+        end)
+    end)
+
+    hook.add("RenderScene", "Lights", function()
+        for _, light in ipairs(lights) do
+            light[1]:draw()
+            light[1]:setPos(light[2]:getPos() + light[3])
+        end
+    end)
 end
