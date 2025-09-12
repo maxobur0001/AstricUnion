@@ -1,0 +1,69 @@
+--@name Astro Trooper (WIP)
+--@author Astric Union
+--@shared
+
+--@include astricunion/libs/sounds.txt
+require("astricunion/libs/sounds.txt")
+
+if SERVER then 
+    --@include astricunion/libs/movement.txt
+    --@include astricunion/libs/guns.txt
+    --@include astricunion/libs/fractional_timers.txt
+    --@include astricunion/holos/astro_trooper_holos.txt
+    
+    require("astricunion/libs/movement.txt")
+    require("astricunion/libs/guns.txt")
+    require("astricunion/libs/fractional_timers.txt")
+    require("astricunion/holos/astro_trooper_holos.txt")
+    
+    STATES = {
+        NotInUse = -1,
+        Idle = 0
+    }
+    local state = STATES.NotInUse
+    
+    
+    
+    local seat = prop.createSeat(chip():getPos() + Vector(0, 0, -12), Angle(), "models/nova/airboat_seat.mdl")
+    local size = Vector(50, 50, 20)
+    local hitbox = prop.createCustom(
+        chip():getPos() + Vector(-size.x/2, -size.y/2, -15),
+        Angle(),
+        {
+            {
+                Vector(0, 0, 0), Vector(size.x, 0, 0), Vector(size.x, size.y, 0), Vector(0, size.y, 0),
+                Vector(0, 0, size.z), Vector(size.x, 0, size.z), Vector(size.x, size.y, size.z), Vector(0, size.y, size.z),
+            },
+        },
+        true
+    )
+    local movement = Movement:new(seat, hitbox)
+    
+    
+    
+    body.base[1]:setParent(hitbox)
+    body.base[2]:setParent(body.base[1])
+    body.base[3]:setParent(body.base[1])
+    body.head[1]:setParent(body.base[1])
+    body.leftblaster[1]:setParent(body.base[1])
+    body.rightblaster[1]:setParent(body.base[1])
+    hitbox:setPos(hitbox:getPos() + Vector(0, 0, 35))
+    
+    --[[local all_holos = {}
+    table.insert(all_holos, body.base[1])
+    table.insert(all_holos, body.rightblaster)
+    table.insert(all_holos, body.leftblaster)]]
+    
+    hook.add("Think", "Movement", function()
+        local driver = seat:getDriver()
+        if isValid(driver) then
+            local eye_trace = driver:getEyeTrace()
+            body.head[1]:setAngles(driver:getEyeAngles())
+        end
+        --[[local angs = body.base[2]:getLocalAngles()
+        body.base[2]:setLocalAngles(angs:setY(angs.y + 5))]]
+        movement:think()
+    end)
+else
+    
+end
