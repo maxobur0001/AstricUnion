@@ -124,7 +124,7 @@ function Blaster:new(pos, bot_hitbox)
 end
 
 
-function Blaster:shoot()
+function Blaster:shoot(on_shoot, on_reload)
     if self.ammo == 0 then
         return
     end
@@ -143,9 +143,12 @@ function Blaster:shoot()
     })
     BlasterProjectile:new(self.hitbox, self.hitbox:getPos(), self.hitbox:getAngles())
     self.ammo = self.ammo - 1
+    if on_shoot then on_shoot() end
     if !timer.exists(self.reloadtimer) and self.ammo == 0 and self:isAlive() then
+        if on_reload then
+            on_reload()
+        end
         timer.create(self.reloadtimer, 0.5, 1, function()
-            print(self.ammo)
             self.ammo = 4
         end)
         FTimer:new(0.5, 1, {

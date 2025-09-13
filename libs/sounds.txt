@@ -8,18 +8,16 @@ if SERVER then
     ---@param name string Sound name to index
     ---@param volume number Sound volume
     ---@param looping boolean Is sound looping
-    ---@param oneshot boolean Sound URL (I'm recomending DropBox)
     ---@param url string Sound URL (I'm recomending DropBox)
     Sound = {}
     Sound.__index = Sound
 
-    function Sound:new(name, volume, looping, oneshot, url)
+    function Sound:new(name, volume, looping, url)
         local self = setmetatable(
             {
                 name = name,
                 volume = volume,
                 looping = looping or false,
-                oneshot = oneshot or false,
                 url = url
             },
             Sound
@@ -29,8 +27,8 @@ if SERVER then
     setmetatable(Sound, {__call = Sound.new})
 
     function preloadSounds(...)
-        for i, snd in ipairs({...}) do
-            timer.simple(1, function()
+        for _, snd in ipairs({...}) do
+            timer.simple(0.5, function()
                 net.start("preloadSound")
                 net.writeString(snd.url)
                 net.writeString(snd.name)
@@ -66,12 +64,14 @@ else
         local volume = net.readInt(32)
         bass.loadURL(url, "3d noblock noplay", function(snd, err, errname)
             if not snd then
-                print(err, errname)
+                print(Color(255, 0, 0), "[AstroSound]", Color(255, 255, 255), " Sound \"" .. name .. "\" error: " .. errname .. ", skip")
                 return
             end
             SOUNDS[name] = snd
+            print(Color(255, 0, 0), "[AstroSound]", Color(255, 255, 255), " Sound \"" .. name .. "\" loaded!")
             snd:setVolume(volume)
             snd:setLooping(loop)
+            status = true
         end)
     end)
 

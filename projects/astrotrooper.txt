@@ -3,7 +3,10 @@
 --@shared
 
 --@include astricunion/libs/sounds.txt
+--@include astricunion/libs/light.txt
 require("astricunion/libs/sounds.txt")
+require("astricunion/libs/light.txt")
+
 
 -- To add filter --
 function eyeTrace(ply, filter)
@@ -21,20 +24,32 @@ if SERVER then
     require("astricunion/libs/movement.txt")
     require("astricunion/libs/guns.txt")
     require("astricunion/libs/fractional_timers.txt")
+
+    -- THIS FILE CREATES HOLOGRAMS --
     require("astricunion/holos/astro_trooper_holos.txt")
+    ---------------------------------
 
-    function createLight(parent, offset, size, brightness, color)
-        net.start("Light")
-        net.writeEntity(parent)
-        net.writeVector(offset)
-        net.writeInt(size, 32)
-        net.writeInt(brightness, 32)
-        net.writeColor(color)
-        net.send(find.allPlayers())
-    end
+    -- Create lights
+    createLight("Main", body.base[1], Vector(0, 0, 20), 80, 10, Color(255, 0, 0))
+    createLight("Underglow", body.base[1], Vector(0, 0, -10), 80, 10, Color(255, 0, 0))
 
+
+    -- Preload sounds
+    preloadSounds(
+        Sound("start", 2, false, "https://www.dl.dropboxusercontent.com/scl/fi/9g8sguici6u5vrqx35wpe/ChargeupGUN.mp3?rlkey=mvevntjbjc5y2ht0xmvac88kc&st=5iba01im&dl=1"),
+        Sound("loop", 2, true, "https://www.dl.dropboxusercontent.com/scl/fi/n9tzb3v1vs6x1fayy9cig/saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1"),
+        Sound("reloadLeft", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
+        Sound("reloadRight", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
+        Sound("blasterLeft", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/fpgejktwdlxjz9nyj7sj4/Blast1.mp3?rlkey=c7h1wy6qu3iy1xa67dan8zte5&st=ru9p1w1b&dl=1"),
+        Sound("blasterRight", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/6q9lpjvt1sru65geweh4q/Blast2.mp3?rlkey=ui22nfydim0bur570at8mdwxg&st=1oj88xy4&dl=1")
+    )
+
+
+    -- Create bot parts --
     local seat = prop.createSeat(chip():getPos() + Vector(0, 0, -6), Angle(), "models/nova/airboat_seat.mdl")
     local size = Vector(50, 50, 20)
+
+    -- Bot body hitbox
     local hitbox = prop.createCustom(
         chip():getPos() + Vector(-size.x/2, -size.y/2, -15),
         Angle(),
@@ -47,40 +62,48 @@ if SERVER then
         true
     )
     hitbox:setColor(Color(255, 255, 255, 0))
-    local headsize = Vector(24, 24, 24)
+
+    -- Bot head hitbox (need to death effect)
+    local headsize = Vector(12, 12, 12)
     local head_hitbox = prop.createCustom(
-        chip():getPos() + Vector(-headsize.x/2, -headsize.y/2, 15),
+        chip():getPos() + Vector(0, 0, 25),
         Angle(),
         {
             {
-                Vector(0, 0, 0), Vector(headsize.x, 0, 0), Vector(headsize.x, headsize.y, 0), Vector(0, headsize.y, 0),
-                Vector(0, 0, headsize.z), Vector(headsize.x, 0, headsize.z), Vector(headsize.x, headsize.y, headsize.z), Vector(0, headsize.y, headsize.z),
+                Vector(-headsize.x, -headsize.y, -headsize.z), Vector(headsize.x, -headsize.y, -headsize.z),
+                Vector(headsize.x, headsize.y, -headsize.z), Vector(-headsize.x, headsize.y, -headsize.z),
+                Vector(-headsize.x, -headsize.y, headsize.z), Vector(headsize.x, -headsize.y, headsize.z),
+                Vector(headsize.x, headsize.y, headsize.z), Vector(-headsize.x, headsize.y, headsize.z),
             },
         },
         true
     )
-    head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
     head_hitbox:setMass(100)
     head_hitbox:setColor(Color(255, 255, 255, 0))
-    timer.simple(1, function()
-        createLight(body.base[1], Vector(0, 0, 20), 80, 10, Color(255, 0, 0))
-        createLight(body.base[1], Vector(0, 0, -10), 80, 10, Color(255, 0, 0))
-    end)
+
+
+    -- Movement --
     local movement = Movement:new(seat, hitbox)
+
+
+    -- Blasters --
     local blaster = {
         left = Blaster:new(chip():getPos() + Vector(0, 40, 0)),
         right = Blaster:new(chip():getPos() + Vector(0, -40, 0))
     }
 
+
+    -- Parenting --
     body.base[1]:setParent(hitbox)
     body.base[2]:setParent(body.base[1])
     body.base[3]:setParent(body.base[1])
     body.base[4]:setParent(body.base[1])
-    body.head:setParent(body.base[1])
-    head_hitbox:setParent(body.head)
+    body.head:setParent(head_hitbox)
+    head_hitbox:setParent(body.base[1])
     blaster.left.hitbox:setParent(body.base[1])
     blaster.right.hitbox:setParent(body.base[1])
     hitbox:setPos(hitbox:getPos() + Vector(0, 0, 35))
+
 
     -- Idle animation --
     local base_pos = body.base[1]:getLocalPos()
@@ -100,11 +123,20 @@ if SERVER then
         end
     })
 
+
+    -- Start sound --
+    timer.simple(4, function()
+        playSound("start", hitbox:getPos())
+    end)
+
+    
+    -- Movement hook. There is all movement (blaster rotation, head rotation, movement object think) --
     hook.add("Think", "Movement", function()
+        playSound("loop", hitbox:getPos())
         local driver = seat:getDriver()
         if isValid(driver) then
             local eye_trace = eyeTrace(driver, {hitbox, blaster.left.hitbox, blaster.right.hitbox, head_hitbox})
-            body.head:setAngles(driver:getEyeAngles())
+            head_hitbox:setAngles(driver:getEyeAngles())
             if blaster.left:isAlive() then
                 blaster.left.hitbox:setAngles((eye_trace.HitPos - blaster.left.hitbox:getPos()):getAngle())
             end
@@ -121,25 +153,57 @@ if SERVER then
         movement:think()
     end)
 
-    hook.add("KeyPress", "Blasters", function(ply, key)
+
+    -- Controls hook --
+    
+    -- Blaster shoot functions
+    function leftShoot()
+        blaster.left:shoot(
+            -- Shoot sound
+            function()
+                playSound("blasterLeft", blaster.left.hitbox:getPos())
+            end,
+            -- Reload sound
+            function()
+                playSound("reloadLeft", blaster.left.hitbox:getPos())
+            end
+        )
+    end
+
+    function rightShoot()
+        blaster.right:shoot(
+            -- Shoot sound
+            function()
+                playSound("blasterRight", blaster.right.hitbox:getPos())
+            end,
+            -- Reload sound
+            function()
+                playSound("reloadRight", blaster.right.hitbox:getPos())
+            end
+        )
+    end
+
+    hook.add("KeyPress", "Controls", function(ply, key)
         local dr = seat:getDriver()
         if ply ~= dr then return end
 
         -- MOUSE1: Blaster
         if key == IN_KEY.ATTACK then
+            -- извиняюсь перед чувствами всех программистов
             if blaster.left:isAlive() and blaster.right:isAlive() then
                 if blaster.left.ammo == blaster.right.ammo then
-                    blaster.left:shoot()
+                    leftShoot()
                 else
-                    blaster.right:shoot()
+                    rightShoot()
                 end
             else
                 if blaster.left:isAlive() then
-                    blaster.left:shoot()
+                    leftShoot()
                 elseif blaster.right:isAlive() then
-                    blaster.right:shoot()
+                    rightShoot()
                 end
             end
+            -- вы приняли извинения :D
 
         -- G: Dash --
         elseif key == IN_KEY.ALT1 then
@@ -148,12 +212,11 @@ if SERVER then
                 velocity = math.lerp(0.2, velocity, 0)
                 hitbox:addVelocity(hitbox:getForward() * velocity)
             end)
-
-        elseif key == IN_KEY.ATTACK2 then
-            hitbox:applyDamage(1000)
         end
     end)
 
+
+    -- On enter --
     hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
         if vehicle == seat then
             vehicle:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
@@ -163,6 +226,8 @@ if SERVER then
         end
     end)
 
+
+    -- On leave --
     hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
         if vehicle == seat then
             vehicle:setCollisionGroup(COLLISION_GROUP.VEHICLE)
@@ -172,35 +237,46 @@ if SERVER then
         end
     end)
 
+
+    -- Health hook, blasters and body health --
     hook.add("EntityTakeDamage", "health", function(target, _, _, amount)
         if target == blaster.left.hitbox then
             blaster.left:damage(amount)
         elseif target == blaster.right.hitbox then
             blaster.right:damage(amount)
-        elseif target == hitbox then
+        elseif target == hitbox or target == head_hitbox then
             movement:damage(amount, function()
                 blaster.left:damage(500)
                 blaster.right:damage(500)
                 idle:remove()
                 head_hitbox:setParent(nil)
-                body.head:setParent(head_hitbox)
                 head_hitbox:setFrozen(false)
-                head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
                 head_hitbox:setPos(head_hitbox:getPos())
-                hook.remove("KeyPress", "Blasters")
+                head_hitbox:setVelocity(Vector(
+                    math.rand(50, 200),
+                    math.rand(50, 200),
+                    math.rand(50, 200)
+                ))
+                hook.remove("KeyPress", "Controls")
                 hook.remove("Think", "Movement")
                 hook.remove("EntityTakeDamage", "health")
                 hook.remove("EntityTakeDamage", "DriverDefense")
+                removeLight("Main")
+                removeLight("Underglow")
+                stopSound("loop")
             end)
         end
     end)
 
+    -- Driver defense, because driver can be killed, except a bot health --
     hook.add("EntityTakeDamage", "DriverDefense", function(target, _, _)
         if target == seat:getDriver() then return true end
     end)
+
 else
     --@include astricunion/libs/ui.txt
     require("astricunion/libs/ui.txt")
+
 
     function createHud()
         hook.add("DrawHUD", "", function()
@@ -247,33 +323,5 @@ else
     net.receive("OnLeave", function()
         enableHud(player(), false)
         removeHud()
-    end)
-
-    local lights = {}
-
-    net.receive("Light", function()
-        net.readEntity(function(ent)
-            local offset = net.readVector()
-            table.insert(
-                lights,
-                {
-                    light.create(
-                        ent:getPos() + offset,
-                        net.readInt(32),
-                        net.readInt(32),
-                        net.readColor()
-                    ),
-                    ent,
-                    offset
-                }
-            )
-        end)
-    end)
-
-    hook.add("RenderScene", "Lights", function()
-        for _, light in ipairs(lights) do
-            light[1]:draw()
-            light[1]:setPos(light[2]:getPos() + light[3])
-        end
     end)
 end

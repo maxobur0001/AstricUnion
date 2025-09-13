@@ -96,7 +96,7 @@ function Movement:damage(amount, callback)
     if not self:isAlive() then return end
     self.health = self.health - amount
     if not self:isAlive() then
-        callback()
+        if callback then callback() end
         self.seat:ejectDriver()
         self.physobj:enableGravity(true)
         timer.create("deathExplosion", 0.2, 3, function()
