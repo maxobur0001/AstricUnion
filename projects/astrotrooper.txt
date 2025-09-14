@@ -367,7 +367,7 @@ else
             render.drawTexturedRect(0, 0, sw, sh)
         end)
 
-        hook.add("CalcView", "", function(ang)
+        hook.add("CalcView", "", function(_, ang)
             return {
                 origin = head:getPos() + ang:getForward() * 12 - Vector(0, 0, 5),
                 angles = ang,
