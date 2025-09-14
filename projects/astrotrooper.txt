@@ -230,7 +230,10 @@ if SERVER then
                         function(ent) return isValid(ent) and isValid(ent:getPhysicsObject()) and not table.hasValue(ignore, ent) end
                     )
                     for _, ent in ipairs(damage) do
-                        ent:applyDamage(50)
+                        local permited, _ = hasPermission("entities.applyDamage", ent)
+                        if permited then
+                            ent:applyDamage(50)
+                        end
                     end
                 end,
                 ["0.7-0.9"] = blaster.left:isAlive() and function(_, _, fraction)
