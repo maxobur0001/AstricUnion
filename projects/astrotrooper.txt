@@ -1,4 +1,4 @@
---@name Astro Trooper (WIP)
+--@name Astro Trooper (BETA)
 --@author Astric Union
 --@shared
 
@@ -49,8 +49,9 @@ if SERVER then
 
     -- Preload sounds
     preloadSounds(
-        Sound("start", 2, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
-        Sound("loop", 2, true, "https://www.dl.dropboxusercontent.com/scl/fi/n9tzb3v1vs6x1fayy9cig/saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1"),
+        Sound("start", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/hquaypds6coht7j62n7vr/reload0.mp3?rlkey=yg1jais8pt13hnocxt8c6wpo6&st=w8dcgloo&dl=1"),
+        Sound("loop", 1, true, "https://www.dl.dropboxusercontent.com/scl/fi/u61ky5sum5em1z0h9q98s/Energy4.wav?rlkey=pyg5cfqx3y10hhuqjxrrb14hh&st=b1v8aa6z&dl=1"),
+        Sound("dash", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
         Sound("reloadLeft", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
         Sound("reloadRight", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
         Sound("blasterLeft", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/fpgejktwdlxjz9nyj7sj4/Blast1.mp3?rlkey=c7h1wy6qu3iy1xa67dan8zte5&st=ru9p1w1b&dl=1"),
@@ -207,27 +208,37 @@ if SERVER then
             can_dash = false
             astro.state = STATES.Dash
             local velocity = 30000
-            FTimer:new(2, 1, {
-                ["0-0.15"] = blaster.left:isAlive() and function(_, _, fraction)
+            local direction = astro.movement:getDirection(dr)
+            direction = direction:isZero() and astro.body:getForward() or direction
+            playSound("dash", Vector(), astro.body)
+            FTimer:new(3.5, 1, {
+                ["0-0.2"] = blaster.left:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
                     blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
                 end,
-                ["0.1-0.25"] = blaster.right:isAlive() and function(_, _, fraction)
+                ["0.1-0.3"] = blaster.right:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
                     blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
                 end or nil,
-                ["0.25-0.75"] = function()
+                ["0.3-0.7"] = function()
                     velocity = math.lerp(0.1, velocity, 0)
-                    astro.body:addVelocity(astro.body:getForward() * velocity)
+                    astro.body:addVelocity(direction * velocity)
+                    local damage = find.inBox(
+                        astro.body:getPos() + Vector(0, 50, 50), astro.body:getPos() + Vector(200, -50, -50),
+                        function(ent) return isValid(ent) and isValid(ent:getPhysicsObject()) and not table.hasValue(ignore, ent) end
+                    )
+                    for _, ent in ipairs(damage) do
+                        ent:applyDamage(50)
+                    end
                 end,
-                ["0.75-0.9"] = blaster.left:isAlive() and function(_, _, fraction)
+                ["0.7-0.9"] = blaster.left:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(1 - fraction)
                     local ang = -180 * smoothed
                     blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
                 end or nil,
-                ["0.85-1"] = blaster.right:isAlive() and function(_, _, fraction)
+                ["0.8-1"] = blaster.right:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(1 - fraction)
                     local ang = -180 * smoothed
                     blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
@@ -282,6 +293,9 @@ if SERVER then
 
                 -- Delete idle animation
                 idle:remove()
+                body.base[2]:setLocalAngularVelocity(Angle())
+                body.base[3]:setLocalAngularVelocity(Angle())
+                body.base[4]:setLocalAngularVelocity(Angle())
 
                 -- Remove hooks
                 hook.remove("KeyPress", "Controls")
