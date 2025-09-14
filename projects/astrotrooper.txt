@@ -216,7 +216,7 @@ if SERVER then
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
                     blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
-                end,
+                end or nil,
                 ["0.1-0.3"] = blaster.right:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
