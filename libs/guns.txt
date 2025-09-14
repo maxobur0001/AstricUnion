@@ -31,7 +31,7 @@ BlasterProjectile.__index = BlasterProjectile
 ---@param velocity number | nil Velocity of a projectile. Default 10000
 ---@param scale number | nil Scale of a projectile. Default 1
 ---@param damage number | nil Maximum damage of a projectile explosion. Default 50
----@param radius number | nil Maximum radius of a projectile explosion. Default 15
+---@param radius number | nil Maximum radius of a projectile explosion. Default 50
 ---@param timeout number | nil Maximum lifetime of a projectile explosion. Default 3
 ---@return BlasterProjectile object
 function BlasterProjectile:new(ignore, position, angle, scale, velocity, damage, radius, timeout)
@@ -56,7 +56,7 @@ function BlasterProjectile:new(ignore, position, angle, scale, velocity, damage,
             ray_length = velocity / 25,
             velocity = velocity,
             damage = damage or 60,
-            radius = radius or 15,
+            radius = radius or 80,
             ignore = ignore
         },
         BlasterProjectile

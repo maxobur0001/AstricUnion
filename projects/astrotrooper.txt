@@ -19,11 +19,13 @@ if SERVER then
     --@include astricunion/libs/movement.txt
     --@include astricunion/libs/guns.txt
     --@include astricunion/libs/fractional_timers.txt
+    --@include astricunion/libs/astrobase.txt
     --@include astricunion/holos/astro_trooper_holos.txt
 
     require("astricunion/libs/movement.txt")
     require("astricunion/libs/guns.txt")
     require("astricunion/libs/fractional_timers.txt")
+    require("astricunion/libs/astrobase.txt")
 
     -- THIS FILE CREATES HOLOGRAMS --
     require("astricunion/holos/astro_trooper_holos.txt")
@@ -35,7 +37,6 @@ if SERVER then
         Idle = 1,
         Dash = 2
     }
-    local STATE = STATES.NotInUse
 
     -- Cooldowns
     local can_dash = true
@@ -59,48 +60,14 @@ if SERVER then
 
     -- Create bot parts --
     local seat = prop.createSeat(chip():getPos() + Vector(0, 0, -6), Angle(), "models/nova/airboat_seat.mdl")
-    local size = Vector(50, 50, 20)
-
-    -- Bot body hitbox
-    local hitbox = prop.createCustom(
-        chip():getPos() + Vector(-size.x/2, -size.y/2, -15),
-        Angle(),
-        {
-            {
-                Vector(0, 0, 0), Vector(size.x, 0, 0), Vector(size.x, size.y, 0), Vector(0, size.y, 0),
-                Vector(0, 0, size.z), Vector(size.x, 0, size.z), Vector(size.x, size.y, size.z), Vector(0, size.y, size.z),
-            },
-        },
-        true
-    )
-    hitbox:setColor(Color(255, 255, 255, 0))
-
-    -- Bot head hitbox (need to death effect)
+    local size = Vector(25, 25, 10)
     local headsize = Vector(12, 12, 12)
-    local head_hitbox = prop.createCustom(
-        chip():getPos() + Vector(0, 0, 25),
-        Angle(),
-        {
-            {
-                Vector(-headsize.x, -headsize.y, -headsize.z), Vector(headsize.x, -headsize.y, -headsize.z),
-                Vector(headsize.x, headsize.y, -headsize.z), Vector(-headsize.x, headsize.y, -headsize.z),
-                Vector(-headsize.x, -headsize.y, headsize.z), Vector(headsize.x, -headsize.y, headsize.z),
-                Vector(headsize.x, headsize.y, headsize.z), Vector(-headsize.x, headsize.y, headsize.z),
-            },
-        },
-        true
-    )
-    head_hitbox:setMass(100)
-    head_hitbox:setColor(Color(255, 255, 255, 0))
-    head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
-
-
-    -- Movement --
-    local movement = Movement:new(seat, hitbox)
-
+    local body_hitbox = hitbox.cube(chip():getPos() + Vector(0, 0, -7.5), Angle(), size, true)
+    local head_hitbox = hitbox.cube(chip():getPos() + Vector(0, 0, 25), Angle(), headsize, true)
+    local astro = AstroBase:new(STATES, body_hitbox, head_hitbox, seat, 1000)
 
     -- Blasters --
-    local ignore = {hitbox, head_hitbox}
+    local ignore = {astro.body, astro.head}
     local blaster = {
         left = Blaster:new(chip():getPos() + Vector(0, 40, 0), ignore),
         right = Blaster:new(chip():getPos() + Vector(0, -40, 0), ignore)
@@ -110,15 +77,18 @@ if SERVER then
 
 
     -- Parenting --MuzzleEffect
-    body.base[1]:setParent(hitbox)
+    body.base[1]:setParent(astro.body)
     body.base[2]:setParent(body.base[1])
     body.base[3]:setParent(body.base[1])
     body.base[4]:setParent(body.base[1])
-    body.head:setParent(head_hitbox)
-    head_hitbox:setParent(body.base[1])
+    body.head:setParent(astro.head)
+    astro.head:setParent(body.base[1])
     blaster.left.hitbox:setParent(body.base[1])
     blaster.right.hitbox:setParent(body.base[1])
-    hitbox:setPos(hitbox:getPos() + Vector(0, 0, 35))
+    astro.body:setPos(astro.body:getPos() + Vector(0, 0, 35))
+    body.base[2]:setLocalAngularVelocity(Angle(0, 200, 0))
+    body.base[3]:setLocalAngularVelocity(Angle(0, -200, 0))
+    body.base[4]:setLocalAngularVelocity(Angle(0, 200, 0))
 
 
     -- Idle animation --
@@ -142,18 +112,16 @@ if SERVER then
 
     -- Start sound --
     timer.simple(4, function()
-        playSound("start", hitbox:getPos())
-        playSound("loop", Vector(), hitbox)
+        playSound("start", astro.body:getPos())
+        playSound("loop", Vector(), astro.body)
     end)
 
-    
-    -- Movement hook. There is all movement (blaster rotation, head rotation, movement object think) --
+
+    -- Movement hook. There is all movement (blaster rotation, astro.head rotation, movement object think) --
     hook.add("Think", "Movement", function()
-        local driver = seat:getDriver()
-        if isValid(driver) then
-            local eye_trace = eyeTrace(driver, {hitbox, blaster.left.hitbox, blaster.right.hitbox, head_hitbox})
-            head_hitbox:setAngles(driver:getEyeAngles())
-            if STATE == STATES.Idle then
+        astro:think(function(driver)
+            local eye_trace = eyeTrace(driver, ignore)
+            if astro.state == STATES.Idle then
                 if blaster.left:isAlive() then
                     blaster.left.hitbox:setAngles((eye_trace.HitPos - blaster.left.hitbox:getPos()):getAngle())
                 end
@@ -161,19 +129,12 @@ if SERVER then
                     blaster.right.hitbox:setAngles((eye_trace.HitPos - blaster.right.hitbox:getPos()):getAngle())
                 end
             end
-        end
-        local angs = body.base[2]:getLocalAngles()
-        body.base[2]:setLocalAngles(angs + Angle(0, 5, 0))
-        local angs = body.base[3]:getLocalAngles()
-        body.base[3]:setLocalAngles(angs - Angle(0, 5, 0))
-        local angs = body.base[4]:getLocalAngles()
-        body.base[4]:setLocalAngles(angs + Angle(0, 5, 0))
-        movement:think()
+        end)
     end)
 
 
     -- Controls hook --
-    
+
     -- Blaster shoot functions
     function ammoUpdate(is_left, ammo)
         net.start("AmmoUpdate")
@@ -221,7 +182,7 @@ if SERVER then
     hook.add("KeyPress", "Controls", function(ply, key)
         local dr = seat:getDriver()
         if ply ~= dr then return end
-        if STATE ~= STATES.Idle then return end
+        if astro.state ~= STATES.Idle then return end
 
         -- MOUSE1: Blaster
         if key == IN_KEY.ATTACK then
@@ -241,38 +202,38 @@ if SERVER then
             end
             -- вы приняли извинения :D
 
-        -- G: Dash --
-        elseif key == IN_KEY.ALT1 and can_dash then
+        -- Mouse2: Dash --
+        elseif key == IN_KEY.ATTACK2 and can_dash then
             can_dash = false
-            STATE = STATES.Dash
+            astro.state = STATES.Dash
             local velocity = 30000
             FTimer:new(2, 1, {
-                ["0-0.15"] = function(_, _, fraction)
+                ["0-0.15"] = blaster.left:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
                     blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
                 end,
-                ["0.1-0.25"] = function(_, _, fraction)
+                ["0.1-0.25"] = blaster.right:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(fraction)
                     local ang = -180 * smoothed
                     blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
-                end,
+                end or nil,
                 ["0.25-0.75"] = function()
                     velocity = math.lerp(0.1, velocity, 0)
-                    hitbox:addVelocity(hitbox:getForward() * velocity)
+                    astro.body:addVelocity(astro.body:getForward() * velocity)
                 end,
-                ["0.75-0.9"] = function(_, _, fraction)
+                ["0.75-0.9"] = blaster.left:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(1 - fraction)
                     local ang = -180 * smoothed
                     blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
-                end,
-                ["0.85-1"] = function(_, _, fraction)
+                end or nil,
+                ["0.85-1"] = blaster.right:isAlive() and function(_, _, fraction)
                     local smoothed = math.easeInOutSine(1 - fraction)
                     local ang = -180 * smoothed
                     blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
-                end,
+                end or nil,
                 [1] = function()
-                    STATE = STATES.Idle
+                    astro.state = STATES.Idle
                     timer.simple(3, function()
                         can_dash = true
                     end)
@@ -282,38 +243,17 @@ if SERVER then
     end)
 
 
-    -- On enter --
-    hook.add("PlayerEnteredVehicle", "", function(ply, vehicle)
-        if vehicle == seat then
-            STATE = STATES.Idle
-            vehicle:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
-            head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
-            ply:setColor(Color(255, 255, 255, 0))
-            net.start("OnEnter")
-            net.writeEntity(body.head)
-            net.send(ply)
-        end
-    end)
+    -- On enter and leave --
+    hook.add("PlayerEnteredVehicle", "", function(ply, seat) astro:enter(ply, seat) end)
+    hook.add("PlayerLeaveVehicle", "", function(ply, seat) astro:leave(ply, seat) end)
 
-
-    -- On leave --
-    hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
-        if vehicle == seat then
-            STATE = STATES.NotInUse
-            vehicle:setCollisionGroup(COLLISION_GROUP.VEHICLE)
-            head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
-            ply:setColor(Color(255, 255, 255, 255))
-            net.start("OnLeave")
-            net.writeEntity(body.head)
-            net.send(ply)
-        end
-    end)
-    
     -- On chip remove --
     hook.add("Removed", "", function()
-        local driver = seat:getDriver()
-        if isValid(driver) then
-            driver:setColor(Color(255, 255, 255, 255))
+        if seat and isValid(seat) then
+            local driver = seat:getDriver()
+            if isValid(driver) then
+                driver:setColor(Color(255, 255, 255, 255))
+            end
         end
     end)
 
@@ -334,36 +274,36 @@ if SERVER then
         elseif target == blaster.right.hitbox then
             blaster.right:damage(amount)
             blasterHealthUpdate(false, blaster.right.health)
-        elseif target == hitbox or target == head_hitbox then
-            movement:damage(amount, function()
-                blaster.left:damage(500)
-                blaster.right:damage(500)
+        elseif target == astro.body or target == astro.head then
+            astro:damage(amount, function()
+                -- Destroy blasters --
+                blaster.left:damage(blaster.left.health)
+                blaster.right:damage(blaster.right.health)
+
+                -- Delete idle animation
                 idle:remove()
-                head_hitbox:setParent(nil)
-                head_hitbox:setFrozen(false)
-                head_hitbox:setPos(head_hitbox:getPos())
-                head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
-                head_hitbox:setVelocity(Vector(
-                    math.rand(-500, 500),
-                    math.rand(-500, 500),
-                    math.rand(-500, 500)
-                ))
+
+                -- Remove hooks
                 hook.remove("KeyPress", "Controls")
                 hook.remove("Think", "Movement")
                 hook.remove("EntityTakeDamage", "health")
                 hook.remove("EntityTakeDamage", "DriverDefense")
+
+                -- Remove lights
                 removeLight("Main")
                 removeLight("Underglow")
+
+                -- Stop loop
                 stopSound("loop")
             end)
             net.start("AstroHealthUpdate")
-            net.writeInt(movement.health, 12)
+            net.writeInt(astro.health, 12)
             net.send(find.allPlayers())
         end
     end)
 
     -- Driver defense, because driver can be killed, except a bot health --
-    hook.add("EntityTakeDamage", "DriverDefense", function(target, _, _)
+    hook.add("EntityTakeDamage", "DriverDefense", function(target, _, _) 
         if target == seat:getDriver() then return true end
     end)
 
@@ -380,7 +320,7 @@ else
     local blasterLeftBar
     local blasterRightBar
     local head
-
+    local overlay = material.load("effects/combine_binocoverlay")
 
     function createHud()
         hook.add("DrawHUD", "", function()
@@ -421,11 +361,15 @@ else
                 blasterRightBar:setLabelRight(tostring(blasterRightHealth) .. "%")
                 blasterRightBar:draw()
             end
+
+            ---- Overlay ----
+            render.setMaterial(overlay)
+            render.drawTexturedRect(0, 0, sw, sh)
         end)
 
-        hook.add("CalcView", "", function(pos, ang, fov, znear, zfar)
+        hook.add("CalcView", "", function(ang)
             return {
-                origin = head:getPos() + ang:getForward() * 16,
+                origin = head:getPos() + ang:getForward() * 12 - Vector(0, 0, 5),
                 angles = ang,
                 fov = 120
             }

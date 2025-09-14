@@ -55,7 +55,9 @@ else
     hook.add("RenderScene", "Lights", function()
         for _, light in pairs(lights) do
             light[1]:draw()
-            light[1]:setPos(light[2]:getPos() + light[3])
+            if isValid(light[2]) then
+                light[1]:setPos(light[2]:getPos() + light[3])
+            end
         end
     end)
 end
