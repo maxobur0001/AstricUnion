@@ -23,7 +23,7 @@ Movement.__index = Movement
     @param hitbox Hitbox to use with bot (collision model)
     @param speed Bot maximum speed. Default 400
     @param sprint Bot sprint maximum speed. Default 800
-    @param sharpness Bot speed sharpness. Default 6
+    @param sharpness Bot speed sharpness. Default 1
     @return Movement object
 ]]--
 function Movement:new(seat, hitbox, speed, sprint, health, sharpness)
@@ -36,7 +36,7 @@ function Movement:new(seat, hitbox, speed, sprint, health, sharpness)
             speed = speed or 400,
             sprint = sprint or 800,
             velocity = Vector(),
-            sharpness = sharpness or 2,
+            sharpness = sharpness or 1,
             -- HEALTH IS HARDCODED!! TODO: Output it to other struct
             health = health or 1000,
             hitbox = hitbox,

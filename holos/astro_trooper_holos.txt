@@ -33,6 +33,7 @@ body = {
         )
     },
     head = hologram.createPart(
+        Holo(SubHolo(Vector(0,0,25),Angle(0,0,0))),
         Holo(SubHolo(Vector(0,0,25),Angle(0,0,0),"models/hunter/misc/sphere075x075.mdl",Vector(0.75,0.75,0.75),true,Color(0,0,0),"models/debug/debugwhite")),
         Holo(SubHolo(Vector(9,0,25),Angle(0,0,0),"models/hunter/misc/sphere075x075.mdl",Vector(0.3,0.55,0.55),true,Color(255,40,40),"models/debug/debugwhite")),
         Holo(SubHolo(Vector(12,0,25),Angle(0,0,0),"models/hunter/misc/sphere075x075.mdl",Vector(0.18,0.4,0.4),true,Color(255,255,255),"models/debug/debugwhite")),

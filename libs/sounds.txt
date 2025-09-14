@@ -40,10 +40,18 @@ if SERVER then
     end
 
 
-    function playSound(name, position)
+    ---Play preloaded sound
+    ---@param name string
+    ---@param position Vector Position or parent of the sound
+    ---@param parent Entity | nil Parent of the sound
+    function playSound(name, offset, parent)
         net.start("playSound")
         net.writeString(name)
-        net.writeVector(position)
+        net.writeVector(offset or Vector())
+        net.writeBool(parent ~= nil)
+        if parent then
+            net.writeEntity(parent)
+        end
         net.send(find.allPlayers())
     end
 
@@ -56,6 +64,7 @@ if SERVER then
 
 else
     SOUNDS = {}
+    PARENTS = {}
 
     net.receive("preloadSound", function()
         local url = net.readString()
@@ -75,9 +84,7 @@ else
         end)
     end)
 
-    net.receive("playSound", function()
-        local name = net.readString()
-        local pos = net.readVector()
+    local function playSound(name, pos)
         local sound = SOUNDS[name]
         if sound then
             if not sound:isLooping() then
@@ -85,6 +92,20 @@ else
             end
             sound:setPos(pos)
             sound:play()
+        end
+    end
+
+    net.receive("playSound", function()
+        local name = net.readString()
+        local pos = net.readVector()
+        local is_parent = net.readBool()
+        if is_parent then
+            net.readEntity(function(ent)
+                playSound(name, ent:getPos())
+                PARENTS[name] = ent
+            end)
+        else
+            playSound(name, pos)
         end
     end)
 
@@ -97,6 +118,15 @@ else
             end
             sound:pause()
             sound:setTime(0)
+        end
+    end)
+
+    hook.add("Think", "soundParent", function()
+        for name, parent in pairs(PARENTS) do
+            local snd = SOUNDS[name]
+            if snd then
+                snd:setPos(parent:getPos())
+            end
         end
     end)
 end

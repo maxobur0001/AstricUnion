@@ -29,6 +29,18 @@ if SERVER then
     require("astricunion/holos/astro_trooper_holos.txt")
     ---------------------------------
 
+    -- States
+    local STATES = {
+        NotInUse = -1,
+        Idle = 1,
+        Dash = 2
+    }
+    local STATE = STATES.NotInUse
+
+    -- Cooldowns
+    local can_dash = true
+
+
     -- Create lights
     createLight("Main", body.base[1], Vector(0, 0, 20), 80, 10, Color(255, 0, 0))
     createLight("Underglow", body.base[1], Vector(0, 0, -10), 80, 10, Color(255, 0, 0))
@@ -36,7 +48,7 @@ if SERVER then
 
     -- Preload sounds
     preloadSounds(
-        Sound("start", 2, false, "https://www.dl.dropboxusercontent.com/scl/fi/9g8sguici6u5vrqx35wpe/ChargeupGUN.mp3?rlkey=mvevntjbjc5y2ht0xmvac88kc&st=5iba01im&dl=1"),
+        Sound("start", 2, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
         Sound("loop", 2, true, "https://www.dl.dropboxusercontent.com/scl/fi/n9tzb3v1vs6x1fayy9cig/saberamb.mp3?rlkey=usn1ur6e34g8aiuhbjie7wn0a&st=g37ivi7q&dl=1"),
         Sound("reloadLeft", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
         Sound("reloadRight", 1, false, "https://www.dl.dropboxusercontent.com/scl/fi/i3us2xj0q47tccze51ymm/ramattack.mp3?rlkey=xy5xulfzaq7nf8fzzvo21z29f&st=g83wealc&dl=1"),
@@ -80,6 +92,7 @@ if SERVER then
     )
     head_hitbox:setMass(100)
     head_hitbox:setColor(Color(255, 255, 255, 0))
+    head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
 
 
     -- Movement --
@@ -87,13 +100,16 @@ if SERVER then
 
 
     -- Blasters --
+    local ignore = {hitbox, head_hitbox}
     local blaster = {
-        left = Blaster:new(chip():getPos() + Vector(0, 40, 0)),
-        right = Blaster:new(chip():getPos() + Vector(0, -40, 0))
+        left = Blaster:new(chip():getPos() + Vector(0, 40, 0), ignore),
+        right = Blaster:new(chip():getPos() + Vector(0, -40, 0), ignore)
     }
+    blaster.left:addIgnore(blaster.right.hitbox)
+    blaster.right:addIgnore(blaster.left.hitbox)
 
 
-    -- Parenting --
+    -- Parenting --MuzzleEffect
     body.base[1]:setParent(hitbox)
     body.base[2]:setParent(body.base[1])
     body.base[3]:setParent(body.base[1])
@@ -127,21 +143,23 @@ if SERVER then
     -- Start sound --
     timer.simple(4, function()
         playSound("start", hitbox:getPos())
+        playSound("loop", Vector(), hitbox)
     end)
 
     
     -- Movement hook. There is all movement (blaster rotation, head rotation, movement object think) --
     hook.add("Think", "Movement", function()
-        playSound("loop", hitbox:getPos())
         local driver = seat:getDriver()
         if isValid(driver) then
             local eye_trace = eyeTrace(driver, {hitbox, blaster.left.hitbox, blaster.right.hitbox, head_hitbox})
             head_hitbox:setAngles(driver:getEyeAngles())
-            if blaster.left:isAlive() then
-                blaster.left.hitbox:setAngles((eye_trace.HitPos - blaster.left.hitbox:getPos()):getAngle())
-            end
-            if blaster.right:isAlive() then
-                blaster.right.hitbox:setAngles((eye_trace.HitPos - blaster.right.hitbox:getPos()):getAngle())
+            if STATE == STATES.Idle then
+                if blaster.left:isAlive() then
+                    blaster.left.hitbox:setAngles((eye_trace.HitPos - blaster.left.hitbox:getPos()):getAngle())
+                end
+                if blaster.right:isAlive() then
+                    blaster.right.hitbox:setAngles((eye_trace.HitPos - blaster.right.hitbox:getPos()):getAngle())
+                end
             end
         end
         local angs = body.base[2]:getLocalAngles()
@@ -157,15 +175,27 @@ if SERVER then
     -- Controls hook --
     
     -- Blaster shoot functions
+    function ammoUpdate(is_left, ammo)
+        net.start("AmmoUpdate")
+        net.writeBool(is_left)
+        net.writeInt(ammo, 4)
+        net.send(find.allPlayers())
+    end
+
     function leftShoot()
         blaster.left:shoot(
             -- Shoot sound
             function()
                 playSound("blasterLeft", blaster.left.hitbox:getPos())
+                ammoUpdate(true, blaster.left.ammo)
             end,
             -- Reload sound
             function()
                 playSound("reloadLeft", blaster.left.hitbox:getPos())
+            end,
+            -- Update ammo after reload
+            function()
+                ammoUpdate(true, blaster.left.ammo)
             end
         )
     end
@@ -175,10 +205,15 @@ if SERVER then
             -- Shoot sound
             function()
                 playSound("blasterRight", blaster.right.hitbox:getPos())
+                ammoUpdate(false, blaster.right.ammo)
             end,
             -- Reload sound
             function()
                 playSound("reloadRight", blaster.right.hitbox:getPos())
+            end,
+            -- Update ammo after reload
+            function()
+                ammoUpdate(false, blaster.right.ammo)
             end
         )
     end
@@ -186,6 +221,7 @@ if SERVER then
     hook.add("KeyPress", "Controls", function(ply, key)
         local dr = seat:getDriver()
         if ply ~= dr then return end
+        if STATE ~= STATES.Idle then return end
 
         -- MOUSE1: Blaster
         if key == IN_KEY.ATTACK then
@@ -206,22 +242,55 @@ if SERVER then
             -- вы приняли извинения :D
 
         -- G: Dash --
-        elseif key == IN_KEY.ALT1 then
+        elseif key == IN_KEY.ALT1 and can_dash then
+            can_dash = false
+            STATE = STATES.Dash
             local velocity = 30000
-            timer.create("dash", 0, 30, function()
-                velocity = math.lerp(0.2, velocity, 0)
-                hitbox:addVelocity(hitbox:getForward() * velocity)
-            end)
+            FTimer:new(2, 1, {
+                ["0-0.15"] = function(_, _, fraction)
+                    local smoothed = math.easeInOutSine(fraction)
+                    local ang = -180 * smoothed
+                    blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
+                end,
+                ["0.1-0.25"] = function(_, _, fraction)
+                    local smoothed = math.easeInOutSine(fraction)
+                    local ang = -180 * smoothed
+                    blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
+                end,
+                ["0.25-0.75"] = function()
+                    velocity = math.lerp(0.1, velocity, 0)
+                    hitbox:addVelocity(hitbox:getForward() * velocity)
+                end,
+                ["0.75-0.9"] = function(_, _, fraction)
+                    local smoothed = math.easeInOutSine(1 - fraction)
+                    local ang = -180 * smoothed
+                    blaster.left.hitbox:setLocalAngles(Angle(ang, 0, 0))
+                end,
+                ["0.85-1"] = function(_, _, fraction)
+                    local smoothed = math.easeInOutSine(1 - fraction)
+                    local ang = -180 * smoothed
+                    blaster.right.hitbox:setLocalAngles(Angle(ang, 0, 0))
+                end,
+                [1] = function()
+                    STATE = STATES.Idle
+                    timer.simple(3, function()
+                        can_dash = true
+                    end)
+                end
+            })
         end
     end)
 
 
     -- On enter --
-    hook.add("PlayerEnteredVehicle", "", function(ply, vehicle, num)
+    hook.add("PlayerEnteredVehicle", "", function(ply, vehicle)
         if vehicle == seat then
+            STATE = STATES.Idle
             vehicle:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
+            head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
             ply:setColor(Color(255, 255, 255, 0))
             net.start("OnEnter")
+            net.writeEntity(body.head)
             net.send(ply)
         end
     end)
@@ -230,20 +299,41 @@ if SERVER then
     -- On leave --
     hook.add("PlayerLeaveVehicle", "", function(ply, vehicle)
         if vehicle == seat then
+            STATE = STATES.NotInUse
             vehicle:setCollisionGroup(COLLISION_GROUP.VEHICLE)
+            head_hitbox:setCollisionGroup(COLLISION_GROUP.IN_VEHICLE)
             ply:setColor(Color(255, 255, 255, 255))
             net.start("OnLeave")
+            net.writeEntity(body.head)
             net.send(ply)
+        end
+    end)
+    
+    -- On chip remove --
+    hook.add("Removed", "", function()
+        local driver = seat:getDriver()
+        if isValid(driver) then
+            driver:setColor(Color(255, 255, 255, 255))
         end
     end)
 
 
     -- Health hook, blasters and body health --
+    function blasterHealthUpdate(is_left, health)
+        net.start("BlasterHealthUpdate")
+        net.writeBool(is_left)
+        net.writeInt(health, 10)
+        net.send(find.allPlayers())
+    end
+
+
     hook.add("EntityTakeDamage", "health", function(target, _, _, amount)
         if target == blaster.left.hitbox then
             blaster.left:damage(amount)
+            blasterHealthUpdate(true, blaster.left.health)
         elseif target == blaster.right.hitbox then
             blaster.right:damage(amount)
+            blasterHealthUpdate(false, blaster.right.health)
         elseif target == hitbox or target == head_hitbox then
             movement:damage(amount, function()
                 blaster.left:damage(500)
@@ -252,10 +342,11 @@ if SERVER then
                 head_hitbox:setParent(nil)
                 head_hitbox:setFrozen(false)
                 head_hitbox:setPos(head_hitbox:getPos())
+                head_hitbox:setCollisionGroup(COLLISION_GROUP.NONE)
                 head_hitbox:setVelocity(Vector(
-                    math.rand(50, 200),
-                    math.rand(50, 200),
-                    math.rand(50, 200)
+                    math.rand(-500, 500),
+                    math.rand(-500, 500),
+                    math.rand(-500, 500)
                 ))
                 hook.remove("KeyPress", "Controls")
                 hook.remove("Think", "Movement")
@@ -265,6 +356,9 @@ if SERVER then
                 removeLight("Underglow")
                 stopSound("loop")
             end)
+            net.start("AstroHealthUpdate")
+            net.writeInt(movement.health, 12)
+            net.send(find.allPlayers())
         end
     end)
 
@@ -277,6 +371,16 @@ else
     --@include astricunion/libs/ui.txt
     require("astricunion/libs/ui.txt")
 
+    local astroHealth = 1000
+    local blasterLeftAmmo = 4
+    local blasterRightAmmo = 4
+    local blasterLeftHealth = 500
+    local blasterRightHealth = 500
+    local healthBar
+    local blasterLeftBar
+    local blasterRightBar
+    local head
+
 
     function createHud()
         hook.add("DrawHUD", "", function()
@@ -286,21 +390,42 @@ else
             render.drawCircle(sw / 2, sh / 2, 1)
 
             ---- HP bar ----
-            local health = player():getHealth() / player():getMaxHealth()
-            if not health_bar then
-                health_bar = Bar:new(sw * 0.2, sh * 0.8, 200, 30, 1)
+            local health = astroHealth / 1000
+            if not healthBar then
+                healthBar = Bar:new(sw / 2 - 100, sh * 0.8, 200, 30, 1)
                     :setLabelLeft("HP")
             end
-            local current = health_bar.current_percent
-            health_bar:setPercent(health)
-                :setLabelRight(tostring(math.round(current * 100)) .. "%")
+            local current = healthBar.current_percent
+            healthBar:setPercent(health)
+                :setLabelRight(tostring(astroHealth) .. "%")
                 :setBarColor(Color(255, 255, 255, 255) * Color(1, current, current, 1))
-            health_bar:draw()
+            healthBar:draw()
+
+            ---- Blasters ammo and health ----
+            if blasterLeftHealth > 0 then
+                if not blasterLeftBar then
+                    blasterLeftBar = Bar:new(sw * 0.1, sh * 0.8, 200, 30, 1)
+                end
+                blasterLeftBar:setLabelRight("    " .. tostring(blasterLeftAmmo) .. "/4")
+                blasterLeftBar:setPercent(blasterLeftHealth / 500)
+                blasterLeftBar:setLabelLeft(tostring(blasterLeftHealth) .. "%")
+                blasterLeftBar:draw()
+            end
+
+            if blasterRightHealth > 0 then
+                if not blasterRightBar then
+                    blasterRightBar = Bar:new(sw * 0.9 - 200, sh * 0.8, 200, 30, 1)
+                end
+                blasterRightBar:setLabelLeft(tostring(blasterRightAmmo) .. "/4    ")
+                blasterRightBar:setPercent(blasterRightHealth / 500)
+                blasterRightBar:setLabelRight(tostring(blasterRightHealth) .. "%")
+                blasterRightBar:draw()
+            end
         end)
 
         hook.add("CalcView", "", function(pos, ang, fov, znear, zfar)
             return {
-                origin = pos + ang:getForward() * 32,
+                origin = head:getPos() + ang:getForward() * 16,
                 angles = ang,
                 fov = 120
             }
@@ -314,14 +439,38 @@ else
     end
 
     net.receive("OnEnter", function()
-        timer.simple(2, function()
+        net.readEntity(function(ent) head = ent end)
+        timer.simple(1, function()
             enableHud(player(), true)
             createHud()
         end)
     end)
 
     net.receive("OnLeave", function()
-        enableHud(player(), false)
-        removeHud()
+        timer.simple(1, function()
+            enableHud(player(), false)
+            removeHud()
+        end)
     end)
+
+    net.receive("AstroHealthUpdate", function()
+        astroHealth = net.readInt(12)
+    end)
+
+    net.receive("AmmoUpdate", function()
+        if net.readBool() then
+            blasterLeftAmmo = net.readInt(4)
+        else
+            blasterRightAmmo = net.readInt(4)
+        end
+    end)
+
+    net.receive("BlasterHealthUpdate", function()
+        if net.readBool() then
+            blasterLeftHealth = net.readInt(10)
+        else
+            blasterRightHealth = net.readInt(10)
+        end
+    end)
+
 end
